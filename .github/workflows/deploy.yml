@@ -1,0 +1,19 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+        registry-url: 'https://registry.npmjs.org'
+    - run: make install-wasm-pack
+    - run: make deploy
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

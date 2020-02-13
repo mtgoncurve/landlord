@@ -1,0 +1,38 @@
+[package]
+name = "landlord"
+version = "0.0.8"
+authors = ["Justin Shrake <justinshrake@gmail.com>"]
+description = "Magic: The Gathering card draw and mulligan simulator"
+repository = "https://github.com/mtgoncurve/landlord"
+license = "MIT"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+bincode = "1"
+lazy_static = "1.2.0"
+regex = "1"
+serde = "1"
+serde_derive = "1"
+flate2 = "1"
+
+[dependencies.rand]
+version = "0.7"
+features = ["wasm-bindgen", "small_rng"]
+
+[dependencies.wasm-bindgen]
+version = "^0.2"
+features = ["serde-serialize"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "cards_in_hand"
+harness = false
+
+[[bench]]
+name = "card_observations_perf_1"
+harness = false

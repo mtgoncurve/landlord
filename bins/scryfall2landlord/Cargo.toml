@@ -1,0 +1,16 @@
+[package]
+name = "scryfall2landlord"
+version = "0.1.0"
+authors = ["Justin Shrake <justinshrake@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+log = "0.4.0"
+env_logger = "0.7.0"
+bincode = "1.0.1"
+lazy_static = "1.2.0"
+flate2 = "1.0"
+landlord = {path="../../lib"}

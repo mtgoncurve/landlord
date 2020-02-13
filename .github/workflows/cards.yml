@@ -1,0 +1,22 @@
+name: Card Update
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # run at 10 AM UTC (2 AM PST)
+    #- cron: '*/5 * * * *' # every 5 minutes (for testing and debugging)
+
+jobs:
+  update-cards:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+    - name: Update card database
+      run: make card-update
+      env:
+        AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        LANDLORD_IS_CI: 1
