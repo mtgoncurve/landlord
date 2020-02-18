@@ -868,4 +868,44 @@ mod tests {
     assert_eq!(obs.mana, runs);
     assert_eq!(obs.tapped, 0);
   }
+
+  #[test]
+  fn syr_no_tapped() {
+    let code = "
+      2 Syr Gwyn, Hero of Ashvale (ELD) 330
+      4 Dalakos, Crafter of Wonders (THB) 212
+      2 Omen of the Sea (THB) 58
+      4 Drawn from Dreams (M20) 56
+      4 Colossus Hammer (M20) 223
+      4 Fires of Invention (ELD) 125
+      4 Shatter the Sky (THB) 37
+      4 Opt (ELD) 59
+      4 Temple of Triumph (M20) 257
+      3 Plains (XLN) 262
+      4 Deafening Clarion (GRN) 165
+      4 Steam Vents (GRN) 257
+      4 Fabled Passage (ELD) 244
+      1 Field of Ruin (THB) 242
+      2 Castle Vantress (ELD) 242
+      3 Island (THB) 251
+      3 Mountain (THB) 285
+      4 Teferi, Time Raveler (WAR) 221
+      ";
+    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
+    let card = &deck.cards[0];
+    assert_eq!(card.kind.is_land(), false);
+    let runs = 100;
+    let draws = 10;
+    let sim = Simulation::from_config(&SimulationConfig {
+      run_count: runs,
+      draw_count: draws,
+      mulligan: &Never::never(),
+      deck: &deck,
+      on_the_play: true,
+    });
+    let obs = sim.observations_for_card(card);
+    dbg!(obs);
+    assert_eq!(obs.mana, 0);
+    assert_eq!(obs.tapped, 0);
+  }
 }

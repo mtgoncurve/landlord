@@ -339,7 +339,7 @@ impl Hand {
         }
 
         // The actual tapland check
-        let is_last_turn = turn >= goal_turn;
+        let is_last_turn = turn >= goal_turn && remaining == 1;
         // Stupid order can occur due to sorting scratch in step 1 above
         let stupid_order = !is_fixed_tap_land && played_non_tap_land;
         let tap_condition = is_tap_land & is_last_turn && !stupid_order;
@@ -347,6 +347,7 @@ impl Hand {
           // Note that this could be a tap land that doesn't contribute to the mana cost
           // In this case, we do not consider this a tapped true event, but rather
           // a cmc true, paid false event (i.e. wrong colors)
+          goal_mana_cost = goal_mana_cost.update_bits();
           maybe_tapped = land_mana.color_contribution(&goal_mana_cost) > 0 || goal_mana_cost.c > 0;
           continue;
         }
