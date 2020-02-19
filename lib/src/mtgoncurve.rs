@@ -500,22 +500,6 @@ mod tests {
         }};
     }
 
-    macro_rules! karsten_tap_check {
-        ($observations:expr, $name:expr, $expected:expr, $thresh:expr) => {{
-            let o = $observations
-                .iter()
-                .find(|o| o.card.name.to_lowercase() == $name.to_lowercase())
-                .unwrap_or_else(|| {
-                    panic!(format!("No card named: {}", $name));
-                });
-            let p_mana_cmc = o.observations.p_mana_given_cmc();
-            let p_tapped_cmc = o.observations.p_tapped_given_cmc();
-            let actual = p_mana_cmc + p_tapped_cmc;
-            let difference = f64::abs($expected - actual);
-            assert!(difference < $thresh);
-        }};
-    }
-
     // 60 card deck, 24 lands, Sources 8
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
@@ -951,7 +935,7 @@ mod tests {
     }
 
     #[test]
-    fn karsten_tap_check_0() {
+    fn karsten_misc_check_0() {
         /*
         60 card, 24 land deck, 4 tap lands
         Use http://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards.png
@@ -987,12 +971,12 @@ Deck
         };
         let results = run_impl(&input).expect("simulation ok");
         let obs = &results.card_observations;
-        karsten_tap_check!(obs, "Burglar Rat", 0.991, 0.01); // 1C
-        karsten_tap_check!(obs, "Yarok's Fenlurker", 0.888, 0.01); // CC
-        karsten_tap_check!(obs, "Plaguecrafter", 0.998, 0.01); // 2C
-        karsten_tap_check!(obs, "Drag to the Underworld", 0.991, 0.01); // 2CC
-        karsten_tap_check!(obs, "Gray Merchant of Asphodel", 0.999, 0.01); // 3CC
-        karsten_tap_check!(obs, "Bolas's Citadel", 0.996, 0.01); // 3CCC
+        karsten_check!(obs, "Burglar Rat", 0.991); // 1C
+        karsten_check!(obs, "Yarok's Fenlurker", 0.888); // CC
+        karsten_check!(obs, "Plaguecrafter", 0.998); // 2C
+        karsten_check!(obs, "Drag to the Underworld", 0.991); // 2CC
+        karsten_check!(obs, "Gray Merchant of Asphodel", 0.999); // 3CC
+        karsten_check!(obs, "Bolas's Citadel", 0.996); // 3CCC
     }
 
     #[test]
