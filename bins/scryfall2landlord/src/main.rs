@@ -74,8 +74,10 @@ fn main() -> Result<(), Error> {
     for card in &scryfall_cards {
         for face in &card.card_faces {
             let mut face = face.clone();
-            face.image_uris = card.image_uris.clone();
-            card_faces.push(face.clone());
+            if face.image_uris.is_empty() {
+                face.image_uris = card.image_uris.clone();
+            }
+            card_faces.push(face);
         }
     }
     scryfall_cards.extend(card_faces);
