@@ -15,7 +15,7 @@ mod scryfall_json_card;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use landlord::card::{Card, Collection};
-use scryfall_json_card::ScryfallJsonCard;
+use scryfall_json_card::{Legality, ScryfallJsonCard};
 use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -61,6 +61,13 @@ fn main() -> Result<(), Error> {
     let json_val = serde_json::from_str(&json_file_contents)?;
     info!("Deserializing Scryfall JSON");
     let mut scryfall_cards: Vec<ScryfallJsonCard> = serde_json::from_value(json_val)?;
+    // Filter out any cards that are not legal in all formats
+    // This should filter out any tokens
+    // See https://github.com/mtgoncurve/landlord/issues/4
+    scryfall_cards = scryfall_cards
+        .into_iter()
+        .filter(|c| c.legalities.values().any(|l| l != &Legality::NotLegal))
+        .collect();
     // Flatten the card_faces out into scryfall_cards
     // To do that, we clone and update the image_uris to that of the parent card
     let mut card_faces = Vec::with_capacity(500);

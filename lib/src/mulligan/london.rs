@@ -1072,7 +1072,7 @@ mod tests {
   fn tmikonen_misc_check_0() {
     let combo_a = ALL_CARDS
       .card_from_name("Ancestral Recall")
-      .expect("Card named \"Fountain of Youth\"");
+      .expect("Card named \"Ancestral Recall\"");
     let combo_b = ALL_CARDS
       .card_from_name("Island")
       .expect("Card named \"Island\"");

@@ -35,7 +35,7 @@ pub struct ScryfallJsonCard {
     //pub released_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq)]
 pub enum Legality {
     #[serde(rename = "legal")]
     Legal,
