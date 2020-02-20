@@ -726,6 +726,22 @@ mod tests {
     }
 
     #[test]
+    fn card_angel_of_sanctions() {
+        let card = ALL_CARDS
+            .card_from_name("Angel of Sanctions")
+            .expect("can't find card");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.turn, 5);
+        assert_eq!(card.mana_cost.b, 0);
+        assert_eq!(card.mana_cost.u, 0);
+        assert_eq!(card.mana_cost.c, 3);
+        assert_eq!(card.mana_cost.g, 0);
+        assert_eq!(card.mana_cost.r, 0);
+        assert_eq!(card.mana_cost.w, 2);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
     fn card_discovery() {
         // NOTE(jshrake): This card has mana cost {1}{U/B}
         // Our code does not properly handle mana costs specified
