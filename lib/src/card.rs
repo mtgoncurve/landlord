@@ -680,6 +680,32 @@ mod tests {
     }
 
     #[test]
+    fn card_search_for_azcanta() {
+        let card = ALL_CARDS
+            .card_from_name("Search for Azcanta")
+            .expect("can't find card");
+        assert_eq!(card.turn, 2);
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.mana_cost.b, 0);
+        assert_eq!(card.mana_cost.u, 1);
+        assert_eq!(card.mana_cost.c, 1);
+        assert_eq!(card.mana_cost.g, 0);
+        assert_eq!(card.mana_cost.r, 0);
+        assert_eq!(card.mana_cost.w, 0);
+        assert!(!card.image_uri.is_empty());
+    }
+
+    #[test]
+    fn card_integrity() {
+        let card = ALL_CARDS
+            .card_from_name("Integrity")
+            .expect("can't find card");
+        assert_eq!(card.turn, 1);
+        assert_eq!(card.is_land(), false);
+        assert!(!card.image_uri.is_empty());
+    }
+
+    #[test]
     fn card_teferi_hero_of_dominaria() {
         let card = ALL_CARDS
             .card_from_name("Teferi, Hero of Dominaria")
@@ -843,6 +869,12 @@ mod tests {
         assert_eq!(card.mana_cost.w, 0);
         assert_eq!(card.mana_cost.c, 1);
         assert_eq!(card.turn, 1);
+    }
+
+    #[test]
+    fn all_cards_have_non_empty_image_uri() {
+        let any_empty_image_uri = ALL_CARDS.cards.iter().any(|c| c.image_uri.is_empty());
+        assert_eq!(any_empty_image_uri, false);
     }
 
     #[test]

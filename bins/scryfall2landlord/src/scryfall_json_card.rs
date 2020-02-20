@@ -181,7 +181,18 @@ impl Into<Card> for ScryfallJsonCard {
         }
         let name = self.name.trim().to_lowercase();
         let image_uri = match self.image_uris.get("normal") {
-            None => "",
+            None => {
+                // It's possible the the image uri is in the first
+                // card face. See https://github.com/mtgoncurve/landlord/issues/6
+                if let Some(card_face) = self.card_faces.first() {
+                    match card_face.image_uris.get("normal") {
+                        None => unreachable!(),
+                        Some(uri) => uri,
+                    }
+                } else {
+                    ""
+                }
+            }
             Some(uri) => uri,
         }
         .to_string();
