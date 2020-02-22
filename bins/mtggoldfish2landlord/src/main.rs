@@ -5,8 +5,6 @@ extern crate serde;
 extern crate log;
 #[macro_use]
 extern crate landlord;
-//#[macro_use]
-//extern crate lazy_static;
 
 extern crate reqwest;
 extern crate select;
@@ -16,11 +14,10 @@ use flate2::Compression;
 use landlord::card::*;
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
+use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-//use std::env;
-//use std::path::Path;
 
 macro_rules! fetch {
   ($url:expr) => {{
@@ -32,9 +29,9 @@ macro_rules! fetch {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   env_logger::init();
-  //let args: Vec<String> = env::args().collect();
-  //assert!(args.len() > 1, "Expected 1 arguments, URI and output path");
-  let out_path_string = "net_decks.landlord";
+  let args: Vec<String> = env::args().collect();
+  let default_out = String::from("data/net_decks.landlord");
+  let out_path_string = args.get(1).unwrap_or(&default_out);
 
   let formats: Vec<&'static str> = vec![
     "standard",
