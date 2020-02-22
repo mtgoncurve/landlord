@@ -13,10 +13,32 @@ pub struct DeckcodeError(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Collection {
     pub cards: Vec<Card>,
+    sort: CollectionSort,
 }
 
+/// A Collection represents a deck or a library of cards
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Deck {
+    pub card_hash_count: std::collections::BTreeMap<u64, u8>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum CollectionSort {
+    Name,
+    ArenaId,
+}
+
+impl Default for CollectionSort {
+    fn default() -> Self {
+        Self::Name
+    }
+}
+
+// TODO: [image_uri] Consider storing only the suffix and concatenate with the hostname on the UI side
+// TODO: [mana_cost_string] Remove mana_cost_string and generate the string from a ManaCost
+// TODO: [mana_cost] Remove mana_cost and use all_mana_costs[0]
+// NOTE: PartialEq and Eq are implemented below
 /// Card represents a Magic: The Gathering card
-// Note that PartialEq and Eq are implemented below
 #[derive(Default, Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Card {
     /// String representing the card name
@@ -35,6 +57,8 @@ pub struct Card {
     pub mana_cost: ManaCost,
     /// All potential mana cost combinations, for cards with split mana costs like "{R/G}"
     pub all_mana_costs: Vec<ManaCost>,
+    /// Arena id
+    pub arena_id: u64,
 }
 
 impl Card {
@@ -233,7 +257,7 @@ impl Collection {
         // NOTE(jshrake): This file is generated!
         // Run scryfall2landlord to generate this file
         // See the `make card-update` task in the top-level Makefile
-        let b = include_bytes!("../../data/all_cards.landlord");
+        let b = include_bytes!("../../data/oracle_cards.landlord");
         let mut gz = GzDecoder::new(&b[..]);
         let mut s: Vec<u8> = Vec::new();
         gz.read_to_end(&mut s).expect("gz decode failed");
@@ -245,16 +269,42 @@ impl Collection {
         // sort for binary_search used in card_from_name
         // note that Card implements Ord by
         cards.sort();
-        Self { cards }
+        Self {
+            cards,
+            sort: CollectionSort::Name,
+        }
+    }
+
+    pub fn sort_by_arena_id(mut self) -> Self {
+        self.cards.sort_unstable_by_key(|c| c.arena_id);
+        self.sort = CollectionSort::ArenaId;
+        self
+    }
+
+    pub fn sort_by_name(mut self) -> Self {
+        self.cards.sort();
+        self.sort = CollectionSort::Name;
+        self
     }
 
     /// Returns a card from the card name
     #[inline]
     pub fn card_from_name(&self, name: &str) -> Option<&Card> {
+        assert_eq!(self.sort, CollectionSort::Name);
         let name_lowercase = name.to_lowercase();
         let res = self
             .cards
             .binary_search_by(|probe| probe.name.to_lowercase().cmp(&name_lowercase));
+        res.map(|idx| &self.cards[idx]).ok()
+    }
+
+    /// Returns a card from the arena id
+    #[inline]
+    pub fn card_from_arena_id(&self, arena_id: u64) -> Option<&Card> {
+        assert_eq!(self.sort, CollectionSort::ArenaId);
+        let res = self
+            .cards
+            .binary_search_by(|probe| probe.arena_id.cmp(&arena_id));
         res.map(|idx| &self.cards[idx]).ok()
     }
 

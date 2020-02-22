@@ -22,6 +22,8 @@ pub struct ScryfallJsonCard {
     pub image_uris: HashMap<String, String>,
     #[serde(default)]
     pub cmc: f32,
+    #[serde(default)]
+    pub arena_id: u64,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub card_faces: Vec<ScryfallJsonCard>,
     // NOTE(jshrake): SCRYFALL_JSON_URL only contains cards with a unique
@@ -214,6 +216,7 @@ impl Into<Card> for ScryfallJsonCard {
             turn,
             mana_cost,
             all_mana_costs,
+            arena_id: self.arena_id,
         }
     }
 }

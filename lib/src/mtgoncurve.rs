@@ -52,9 +52,41 @@ struct Output {
     pub non_land_counts: ManaColorCount,
 }
 
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct MtgOnCurveCard {
+    /// String representing the card name
+    pub name: String,
+    /// String representing the card mana cost, in "{X}{R}{R}" style format
+    pub mana_cost_string: String,
+    /// A URI to an image of the card
+    pub image_uri: String,
+    /// The card type
+    pub kind: CardKind,
+    /// A hash of the card name
+    pub hash: u64,
+    /// The turn to play the card, defaults to mana_cost.cmc()
+    pub turn: u8,
+    /// ManaCost representation of the card mana cost
+    pub mana_cost: ManaCost,
+}
+
+impl From<&&Card> for MtgOnCurveCard {
+    fn from(card: &&Card) -> Self {
+        Self {
+            name: card.name.clone(),
+            mana_cost_string: card.mana_cost_string.clone(),
+            image_uri: card.image_uri.clone(),
+            kind: card.kind,
+            hash: card.hash,
+            turn: card.turn,
+            mana_cost: card.mana_cost,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct CardObservation {
-    card: Card,
+    card: MtgOnCurveCard,
     cmc: u8,
     card_count: usize,
     observations: Observations,
@@ -152,10 +184,9 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .map(|card| {
             let o = sim.observations_for_card_by_turn(&card, card.turn as usize);
             let card_count = deck.cards.iter().filter(|c| c.hash == card.hash).count();
-            let card = (*card).clone();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card,
+                card: card.into(),
                 cmc,
                 card_count,
                 observations: o,
@@ -175,10 +206,9 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .iter()
         .map(|card| {
             let card_count = deck.cards.iter().filter(|c| c.name == card.name).count();
-            let card = (*card).clone();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card,
+                card: card.into(),
                 cmc,
                 card_count,
                 observations: Observations::new(),
