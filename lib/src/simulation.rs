@@ -120,17 +120,13 @@ impl Simulation {
 
 #[cfg(test)]
 mod tests {
+  use crate::card::*;
   use crate::mulligan::Never;
   use crate::simulation::*;
 
-  lazy_static! {
-    static ref ALL_CARDS: Collection = Collection::all().expect("Collection::all failed");
-  }
-
   #[test]
   fn deck_with_not_enough_cards_should_not_panic() {
-    let code = include_str!("decks/not_enough_cards");
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(include_str!("decks/not_enough_cards"));
     Simulation::from_config(&SimulationConfig {
       run_count: 10,
       draw_count: 10,
@@ -142,9 +138,7 @@ mod tests {
 
   #[test]
   fn deck_with_single_zero_mana_card() {
-    let card = ALL_CARDS
-      .card_from_name("Ornithopter")
-      .expect("Card named \"Ornithopter\"");
+    let card = card!("Ornithopter");
     let deck = Collection::from_cards(vec![card.clone()]);
     let runs = 10;
     let draws = 0;
@@ -163,14 +157,12 @@ mod tests {
 
   #[test]
   fn small_deck_1() {
-    let deck_list = "
+    let deck = decklist!(
+      "
     1 Llanowar Elves
     6 Forest
-    ";
-    let deck = ALL_CARDS
-      .from_deck_list(deck_list)
-      .expect("good deck list")
-      .0;
+    "
+    );
     let runs = 10;
     let draws = 0;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -180,7 +172,7 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(&deck.cards[0]);
+    let obs = sim.observations_for_card(&card!("Llanowar Elves"));
     assert_eq!(obs.cmc, runs);
     assert_eq!(obs.mana, runs);
     assert_eq!(obs.play, runs);
@@ -189,14 +181,12 @@ mod tests {
   // on the draw, always draw all 8 cards
   #[test]
   fn small_deck_2() {
-    let deck_list = "
+    let deck = decklist!(
+      "
     1 Llanowar Elves
     7 Forest
-    ";
-    let deck = ALL_CARDS
-      .from_deck_list(deck_list)
-      .expect("good deck list")
-      .0;
+    "
+    );
     let draws = 1;
     let runs = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -206,7 +196,7 @@ mod tests {
       deck: &deck,
       on_the_play: false,
     });
-    let obs = sim.observations_for_card(&deck.cards[0]);
+    let obs = sim.observations_for_card(&card!("Llanowar Elves"));
     assert_eq!(obs.cmc, runs);
     assert_eq!(obs.mana, runs);
     assert_eq!(obs.play, runs);
@@ -214,14 +204,12 @@ mod tests {
 
   #[test]
   fn small_deck_3() {
-    let deck_list = "
+    let deck = decklist!(
+      "
     6 Llanowar Elves
     1 Forest
-    ";
-    let deck = ALL_CARDS
-      .from_deck_list(deck_list)
-      .expect("good deck list")
-      .0;
+    "
+    );
     let draws = 1;
     let runs = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -231,7 +219,7 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(&deck.cards[0]);
+    let obs = sim.observations_for_card(&card!("Llanowar Elves"));
     assert_eq!(obs.cmc, runs);
     assert_eq!(obs.mana, runs);
     assert_eq!(obs.play, runs);
@@ -245,10 +233,7 @@ mod tests {
     7 Llanowar Elves
     1 Forest
     ";
-    let deck = ALL_CARDS
-      .from_deck_list(deck_list)
-      .expect("good deck list")
-      .0;
+    let deck = decklist!(deck_list);
     let draws = 1;
     let runs = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -258,7 +243,7 @@ mod tests {
       deck: &deck,
       on_the_play: false,
     });
-    let obs = sim.observations_for_card(&deck.cards[0]);
+    let obs = sim.observations_for_card(&card!("Llanowar Elves"));
     assert_eq!(obs.cmc, runs);
     assert_eq!(obs.mana, runs);
     assert_eq!(obs.play, runs);
@@ -267,9 +252,9 @@ mod tests {
 
   #[test]
   fn small_deck_5() {
-    let card = ALL_CARDS.card_from_name("Aura of Dominion").unwrap();
-    let land0 = ALL_CARDS.card_from_name("Island").unwrap();
-    let land1 = ALL_CARDS.card_from_name("Sulfur Falls").unwrap();
+    let card = card!("Aura of Dominion");
+    let land0 = card!("Island");
+    let land1 = card!("Sulfur Falls");
     let deck = Collection::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
     let draws = 1;
     let runs = 10;
@@ -288,9 +273,9 @@ mod tests {
 
   #[test]
   fn small_deck_6() {
-    let card = ALL_CARDS.card_from_name("Aura of Dominion").unwrap();
-    let land0 = ALL_CARDS.card_from_name("Island").unwrap();
-    let land1 = ALL_CARDS.card_from_name("Sulfur Falls").unwrap();
+    let card = card!("Aura of Dominion");
+    let land0 = card!("Island");
+    let land1 = card!("Sulfur Falls");
     let deck = Collection::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
     let draws = 1;
     let runs = 10;
@@ -313,7 +298,7 @@ mod tests {
             38 Integrity
             22 Wind-Scarred Crag
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let draws = 0;
     let runs = 1000;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -323,7 +308,7 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let o = sim.observations_for_card(ALL_CARDS.card_from_name("Integrity").unwrap());
+    let o = sim.observations_for_card(card!("Integrity"));
     assert!(o.mana == o.cmc);
   }
 
@@ -354,7 +339,7 @@ mod tests {
             1 Mastermind's Acquisition (RIX) 77
             4 Watery Grave (GRN) 259
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let draws = 8;
     let runs = 20000;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -364,11 +349,11 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(ALL_CARDS.card_from_name("Opt").unwrap());
+    let obs = sim.observations_for_card(card!("Opt"));
     let actual = obs.p_mana();
-    // All 17 of the 17 blue land sources can enter turn 1 untapped.
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -396,7 +381,7 @@ mod tests {
             4 Sulfur Falls
             2 Syncopate
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let draws = 8;
     let runs = 20000;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -406,11 +391,11 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(ALL_CARDS.card_from_name("Opt").unwrap());
+    let obs = sim.observations_for_card(card!("Opt"));
     let actual = obs.p_mana();
-    // All 17 blue lands are valid
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -421,7 +406,7 @@ mod tests {
         9 Swamp
         34 History of Benalia
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 20000;
     let draws = 8;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -431,11 +416,12 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(ALL_CARDS.card_from_name("History of Benalia").unwrap());
+    let obs = sim.observations_for_card(card!("History of Benalia"));
     let actual = obs.p_mana();
     // Use https://deckulator.appspot.com/ to calculate this number. Need to perform 3 calculations (Draw 2 plains + 1 Swamp) + (Draw 3 plains + 0 Swamp) - (Draw 3 plains + 1 swamp)
     let expected = 0.746;
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -446,7 +432,7 @@ mod tests {
         8 Swamp
         36 Jadelight Ranger
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 20000;
     let draws = 8;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -456,11 +442,12 @@ mod tests {
       deck: &deck,
       on_the_play: true,
     });
-    let obs = sim.observations_for_card(ALL_CARDS.card_from_name("Jadelight Ranger").unwrap());
+    let obs = sim.observations_for_card(card!("Jadelight Ranger"));
     let actual = obs.p_mana();
     // Multivariate hypergeom, see example 7 from https://www.channelfireball.com/articles/an-introduction-to-the-multivariate-hypergeometric-distribution-for-magic-players/
     let expected = 0.692;
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -473,8 +460,8 @@ mod tests {
     1 waterlogged grove
       2 mountain
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = ALL_CARDS.card_from_name("yarok, the desecrated").unwrap();
+    let deck = decklist!(code);
+    let card = card!("yarok, the desecrated");
     let runs = 100;
     let draws = 0;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -501,8 +488,8 @@ mod tests {
       1 Plains
       1 Island
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = ALL_CARDS.card_from_name("Clarion Ultimatum").unwrap();
+    let deck = decklist!(code);
+    let card = card!("Clarion Ultimatum");
     let runs = 1000;
     let draws = 6;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -529,8 +516,8 @@ mod tests {
       1 Plains
       1 Island
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = ALL_CARDS.card_from_name("Clarion Ultimatum").unwrap();
+    let deck = decklist!(code);
+    let card = card!("Clarion Ultimatum");
     let runs = 1000;
     let draws = 6;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -557,8 +544,8 @@ mod tests {
       1 Plains
       1 Island
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = ALL_CARDS.card_from_name("Clarion Ultimatum").unwrap();
+    let deck = decklist!(code);
+    let card = card!("Clarion Ultimatum");
     let runs = 1000;
     let draws = 6;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -585,8 +572,8 @@ mod tests {
       1 Plains
       1 Island
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = ALL_CARDS.card_from_name("Clarion Ultimatum").unwrap();
+    let deck = decklist!(code);
+    let card = card!("Clarion Ultimatum");
     let runs = 1000;
     let draws = 6;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -608,7 +595,7 @@ mod tests {
     1 Agonizing Remorse # T = 6
     59 Cinder Barrens
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
+    let deck = decklist!(code);
     let card = &deck.cards[0];
     assert_eq!(card.kind.is_land(), false);
     let runs = 100;
@@ -647,8 +634,8 @@ mod tests {
       3 Mountain (THB) 285
       4 Teferi, Time Raveler (WAR) 221
       ";
-    let deck = ALL_CARDS.from_deck_list(code).unwrap().0;
-    let card = &deck.cards[0];
+    let deck = decklist!(code);
+    let card = card!("Syr Gwyn, Hero of Ashvale");
     assert_eq!(card.kind.is_land(), false);
     let runs = 100;
     let draws = 10;
