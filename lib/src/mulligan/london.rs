@@ -751,7 +751,8 @@ mod tests {
       });
       let good_hands = good_hand_count(&sim.hands);
       let p = good_hands as f64 / runs as f64;
-      assert!(f64::abs(p - 0.8994) < 0.03);
+      dbg!(p);
+      assert!(f64::abs(p - 0.8994) < 0.035);
     }
     // Down to 5
     {
