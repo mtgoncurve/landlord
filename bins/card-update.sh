@@ -28,7 +28,7 @@ if [ $? -eq 1 ] && [ "$CI" -eq 1 ]; then
     aws s3 cp "$INPUT" "s3://mtgoncurve-scryfall-archive/$INPUT"
     git config --local user.name "Card Update Bot"
     git config --local user.email "bot@mtgoncurve.com"
-    git commit -am "Update AllCards.landlord ($INPUT)"
+    git commit -am "Update all_cards.landlord ($INPUT)"
     git push origin master
 fi
 rm "$INPUT"

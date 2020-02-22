@@ -351,7 +351,6 @@ mod tests {
     });
     let obs = sim.observations_for_card(card!("Opt"));
     let actual = obs.p_mana();
-    // All 17 of the 17 blue land sources can enter turn 1 untapped.
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
     assert!(difference < 0.01); // To within 1%
@@ -393,7 +392,6 @@ mod tests {
     });
     let obs = sim.observations_for_card(card!("Opt"));
     let actual = obs.p_mana();
-    // All 17 blue lands are valid
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
     assert!(difference < 0.01); // To within 1%

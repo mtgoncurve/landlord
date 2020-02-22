@@ -228,7 +228,7 @@ impl CardKind {
 }
 
 impl Collection {
-    /// Returns a new collection of all cards defined in AllCards.landlord
+    /// Returns a new collection of all cards from data/all_cards.landlord
     pub fn all() -> Result<Self, bincode::Error> {
         // NOTE(jshrake): This file is generated!
         // Run scryfall2landlord to generate this file
