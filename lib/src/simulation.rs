@@ -353,6 +353,7 @@ mod tests {
     let actual = obs.p_mana();
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -394,6 +395,7 @@ mod tests {
     let actual = obs.p_mana();
     let expected = 0.917; // Hypergeometric, 60, 17, 7, 1
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -419,6 +421,7 @@ mod tests {
     // Use https://deckulator.appspot.com/ to calculate this number. Need to perform 3 calculations (Draw 2 plains + 1 Swamp) + (Draw 3 plains + 0 Swamp) - (Draw 3 plains + 1 swamp)
     let expected = 0.746;
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
@@ -444,6 +447,7 @@ mod tests {
     // Multivariate hypergeom, see example 7 from https://www.channelfireball.com/articles/an-introduction-to-the-multivariate-hypergeometric-distribution-for-magic-players/
     let expected = 0.692;
     let difference = f64::abs(expected - actual);
+    dbg!(expected, actual, difference);
     assert!(difference < 0.01); // To within 1%
   }
 
