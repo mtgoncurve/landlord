@@ -6,5 +6,5 @@ Converts a [Scryfall bulk data JSON file](https://scryfall.com/docs/api/bulk-dat
 
 ```console
 curl "https://archive.scryfall.com/json/scryfall-oracle-cards.json" -o "./scryfall-oracle-cards.json"
-cargo run -- ./scryfall-oracle-cards.json ./AllCards.landlord
+cargo run -- ./scryfall-oracle-cards.json ./data/all_cards.landlord
 ```

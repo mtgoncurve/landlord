@@ -1,7 +1,7 @@
 //! # https://mtgoncurve.com interface
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
-use crate::card::{Card, CardKind, Collection, ManaCost};
+use crate::card::{Card, CardKind, ManaCost, ALL_CARDS};
 use crate::mulligan::London;
 use crate::simulation::{Observations, Simulation, SimulationConfig};
 
@@ -19,12 +19,17 @@ enum Error {
 /// Input format expected from https://mtgoncurve.com
 #[derive(Debug, Serialize, Deserialize)]
 struct Input {
+    /// The decklist code
     pub code: String,
+    /// The number of runs to perform
     pub runs: usize,
+    /// True if we play first, false if we play second
     pub on_the_play: bool,
-    pub initial_hand_size: usize,
+    /// The maximum number of cards we are willing to mulligan down to
     pub mulligan_down_to: usize,
+    /// We mulligan any hand that contains a land count found in mulligan_on_lands
     pub mulligan_on_lands: HashSet<usize>,
+    #[doc(hidden)]
     pub acceptable_hand_list: Vec<Vec<String>>,
 }
 
@@ -103,9 +108,6 @@ pub fn run(input: &JsValue) -> JsValue {
 }
 
 fn run_impl(input: &Input) -> Result<Output, Error> {
-    lazy_static! {
-        static ref ALL_CARDS: Collection = Collection::all().expect("Collection::all failed");
-    }
     let deck = match ALL_CARDS.from_deck_list(&input.code) {
         Err(e) => return Err(Error::BadDeckcode(e.0)),
         Ok((m, _)) => m,
@@ -325,6 +327,29 @@ impl Default for Output {
 mod tests {
     use crate::mtgoncurve::*;
 
+    // The following tests confirm numbers from the tables in the article
+    // https://www.channelfireball.com/articles/how-many-colored-mana-sources-do-you-need-to-consistently-cast-your-spells-a-guilds-of-ravnica-update/
+    // While this article was based on the vancouver mulligan, it is still relevant today!
+    macro_rules! karsten_check_raw {
+        ($observations:expr, $name:expr, $expected:expr, $thresh:expr) => {{
+            let o = $observations
+                .iter()
+                .find(|o| o.card.name.to_lowercase() == $name.to_lowercase())
+                .unwrap_or_else(|| {
+                    panic!(format!("No card named: {}", $name));
+                });
+            let actual = o.observations.p_mana_given_cmc();
+            let difference = f64::abs($expected - actual);
+            assert!(difference < $thresh);
+        }};
+    }
+
+    macro_rules! karsten_check {
+        ($observations:expr, $name:expr, $expected:expr) => {{
+            karsten_check_raw!($observations, $name, $expected, 0.015)
+        }};
+    }
+
     #[test]
     fn test_0() {
         let code = include_str!("decks/24-60-8");
@@ -338,7 +363,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands,
             acceptable_hand_list: Vec::new(),
@@ -391,7 +415,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands,
             acceptable_hand_list: Vec::new(),
@@ -443,7 +466,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands,
             acceptable_hand_list,
@@ -464,7 +486,6 @@ mod tests {
             code: code.to_string(),
             runs: n,
             on_the_play: false,
-            initial_hand_size: 7,
             mulligan_down_to: 7,
             mulligan_on_lands: Default::default(),
             acceptable_hand_list: Default::default(),
@@ -477,29 +498,6 @@ mod tests {
         assert_eq!(obs.observations.play, n);
     }
 
-    // The following tests confirm numbers from the tables in the article
-    // https://www.channelfireball.com/articles/how-many-colored-mana-sources-do-you-need-to-consistently-cast-your-spells-a-guilds-of-ravnica-update/
-    // While this article was based on the vancouver mulligan, it is still relevant today!
-    macro_rules! karsten_check_raw {
-        ($observations:expr, $name:expr, $expected:expr, $thresh:expr) => {{
-            let o = $observations
-                .iter()
-                .find(|o| o.card.name.to_lowercase() == $name.to_lowercase())
-                .unwrap_or_else(|| {
-                    panic!(format!("No card named: {}", $name));
-                });
-            let actual = o.observations.p_mana_given_cmc();
-            let difference = f64::abs($expected - actual);
-            assert!(difference < $thresh);
-        }};
-    }
-
-    macro_rules! karsten_check {
-        ($observations:expr, $name:expr, $expected:expr) => {{
-            karsten_check_raw!($observations, $name, $expected, 0.015)
-        }};
-    }
-
     // 60 card deck, 24 lands, Sources 8
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
@@ -510,7 +508,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -550,7 +547,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -590,7 +586,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -630,7 +625,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -699,7 +693,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -748,7 +741,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -795,7 +787,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -835,7 +826,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -877,7 +867,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -923,7 +912,6 @@ mod tests {
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -964,7 +952,6 @@ Deck
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),
@@ -989,7 +976,6 @@ Deck
             code: code.to_string(),
             runs: total,
             on_the_play: true,
-            initial_hand_size: 7,
             mulligan_down_to: 5,
             mulligan_on_lands: vec![0, 1, 6, 7].into_iter().collect(),
             acceptable_hand_list: Default::default(),

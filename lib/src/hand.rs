@@ -212,7 +212,12 @@ impl Hand {
   ) -> AutoTapResult {
     // The implementation attempts to get goal_mana_cost.cmc() == 0
     // by tapping land cards for the appropriate colors
-    let mut goal_mana_cost = goal.mana_cost;
+    let mut r = goal.mana_cost.r;
+    let mut g = goal.mana_cost.g;
+    let mut b = goal.mana_cost.b;
+    let mut u = goal.mana_cost.u;
+    let mut w = goal.mana_cost.w;
+    let mut c = goal.mana_cost.c;
     let draw_count = match play_order {
       PlayOrder::First => turn_count - 1,
       PlayOrder::Second => turn_count,
@@ -257,7 +262,7 @@ impl Hand {
     let land_count = scratch.len();
 
     // Early exit if we don't have CMC lands
-    if land_count < goal_mana_cost.cmc() as usize {
+    if land_count < (r + g + b + u + w + c) as usize {
       return AutoTapResult {
         paid: false,
         cmc: false,
@@ -269,11 +274,11 @@ impl Hand {
     // GREEDY ALGORITHM: STEP 1
     // We want to tap lands that contribute the least to the mana cost first,
     // i.e. basic lands and dual lands that only contribute one relevant mana
-    scratch.sort_unstable_by_key(|land| land.mana_cost.color_contribution(&goal_mana_cost));
+    scratch.sort_unstable_by_key(|land| land.mana_cost.color_contribution(&goal.mana_cost));
 
     // Now, iterate through the lands in our scratch space
     for (i, land) in scratch.iter().enumerate() {
-      let remaining = goal_mana_cost.cmc();
+      let remaining = r + g + b + u + w + c;
       // The cost is paid -- break!
       if remaining == 0 {
         break;
@@ -282,11 +287,11 @@ impl Hand {
       // GREEDY ALGORITHM: STEP 2
       // Sort by the least mana color available followed by the largest mana color cost remaining to pay
       let mut color_order = [
-        (ManaColor::Red, 0, -(goal_mana_cost.r as i16)),
-        (ManaColor::Green, 0, -(goal_mana_cost.g as i16)),
-        (ManaColor::Black, 0, -(goal_mana_cost.b as i16)),
-        (ManaColor::Blue, 0, -(goal_mana_cost.u as i16)),
-        (ManaColor::White, 0, -(goal_mana_cost.w as i16)),
+        (ManaColor::Red, 0, -(r as i16)),
+        (ManaColor::Green, 0, -(g as i16)),
+        (ManaColor::Black, 0, -(b as i16)),
+        (ManaColor::Blue, 0, -(u as i16)),
+        (ManaColor::White, 0, -(w as i16)),
         (ManaColor::Colorless, 0, 0),
       ];
       for remaining_land in &scratch[i..] {
@@ -299,47 +304,47 @@ impl Hand {
       }
       color_order[..=4].sort_unstable_by_key(|c| (c.1, c.2));
 
+      let tap_for_r = land_mana.r != 0 && r != 0;
+      let tap_for_g = land_mana.g != 0 && g != 0;
+      let tap_for_b = land_mana.b != 0 && b != 0;
+      let tap_for_u = land_mana.u != 0 && u != 0;
+      let tap_for_w = land_mana.w != 0 && w != 0;
+      let tap_for_c = c != 0;
       for (color, _, _) in &color_order {
         match color {
           ManaColor::Red => {
-            let tap_for_r = land_mana.r != 0 && goal_mana_cost.r != 0;
             if tap_for_r {
-              goal_mana_cost.r -= 1;
+              r -= 1;
               break;
             }
           }
           ManaColor::Green => {
-            let tap_for_g = land_mana.g != 0 && goal_mana_cost.g != 0;
             if tap_for_g {
-              goal_mana_cost.g -= 1;
+              g -= 1;
               break;
             }
           }
           ManaColor::Black => {
-            let tap_for_b = land_mana.b != 0 && goal_mana_cost.b != 0;
             if tap_for_b {
-              goal_mana_cost.b -= 1;
+              b -= 1;
               break;
             }
           }
           ManaColor::Blue => {
-            let tap_for_u = land_mana.u != 0 && goal_mana_cost.u != 0;
             if tap_for_u {
-              goal_mana_cost.u -= 1;
+              u -= 1;
               break;
             }
           }
           ManaColor::White => {
-            let tap_for_w = land_mana.w != 0 && goal_mana_cost.w != 0;
             if tap_for_w {
-              goal_mana_cost.w -= 1;
+              w -= 1;
               break;
             }
           }
           ManaColor::Colorless => {
-            let tap_for_c = goal_mana_cost.c != 0;
             if tap_for_c {
-              goal_mana_cost.c -= 1;
+              c -= 1;
               break;
             }
           }
@@ -348,7 +353,7 @@ impl Hand {
     }
 
     // OK! We've considered all of our lands -- did we pay the cost?
-    let paid = goal_mana_cost.cmc() == 0;
+    let paid = r + g + b + u + w + c == 0;
     AutoTapResult {
       paid,
       cmc: true,
@@ -360,28 +365,16 @@ impl Hand {
 
 #[cfg(test)]
 mod tests {
-  use crate::card::Collection;
+  use crate::card::*;
   use crate::hand::*;
-
-  lazy_static! {
-    static ref ALL_CARDS: Collection = Collection::all().expect("Collection::all failed");
-  }
 
   #[test]
   fn cards_can_pay_0() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
+    let card = card!("Adeliz, the Cinder Wind");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -389,39 +382,19 @@ mod tests {
 
   #[test]
   fn cards_can_pay_1() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
-    let opening = vec![
-      ALL_CARDS
-        .card_from_name("Forest")
-        .expect("Card named \"Forest\""),
-      ALL_CARDS
-        .card_from_name("Forest")
-        .expect("Card named \"Forest\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
-    ];
+    let card = card!("Adeliz, the Cinder Wind");
+    let opening = vec![card!("Forest"), card!("Forest"), card!("Sulfur Falls")];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
   }
 
   #[test]
   fn cards_can_pay_2() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
+    let card = card!("Adeliz, the Cinder Wind");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Woodland Cemetery")
-        .expect("Card named \"Woodland Cemetery\""),
-      ALL_CARDS
-        .card_from_name("Woodland Cemetery")
-        .expect("Card named \"Woodland Cemetery\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
+      card!("Woodland Cemetery"),
+      card!("Woodland Cemetery"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -429,19 +402,11 @@ mod tests {
 
   #[test]
   fn cards_can_pay_3() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
+    let card = card!("Adeliz, the Cinder Wind");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
+      card!("Detection Tower"),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -449,19 +414,11 @@ mod tests {
 
   #[test]
   fn cards_can_pay_4() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
+    let card = card!("Adeliz, the Cinder Wind");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Clifftop Retreat")
-        .expect("Card named \"Clifftop Retreat\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
+      card!("Detection Tower"),
+      card!("Clifftop Retreat"),
+      card!("Steam Vents"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -469,19 +426,11 @@ mod tests {
 
   #[test]
   fn cards_can_pay_5() {
-    let card = ALL_CARDS
-      .card_from_name("Adeliz, the Cinder Wind")
-      .expect("Card named \"Adeliz, the Cinder Wind\"");
+    let card = card!("Adeliz, the Cinder Wind");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Clifftop Retreat")
-        .expect("Card named \"Clifftop Retreat\""),
+      card!("Detection Tower"),
+      card!("Steam Vents"),
+      card!("Clifftop Retreat"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -489,22 +438,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_6() {
-    let card = ALL_CARDS
-      .card_from_name("Nicol Bolas, the Ravager")
-      .expect("Card named \"Nicol Bolas, the Ravager\"");
+    let card = card!("Nicol Bolas, the Ravager");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Island")
-        .expect("Card named \"Island\""),
-      ALL_CARDS
-        .card_from_name("Dragonskull Summit")
-        .expect("Card named \"Dragonskull Summit\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
+      card!("Detection Tower"),
+      card!("Island"),
+      card!("Dragonskull Summit"),
+      card!("Steam Vents"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -512,14 +451,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_7() {
-    let card = ALL_CARDS
-      .card_from_name("Nicol Bolas, the Ravager")
-      .expect("Card named \"Nicol Bolas, the Ravager\"");
+    let card = card!("Nicol Bolas, the Ravager");
     let opening = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Dragonskull Summit"),
+      card!("Dragonskull Summit"),
+      card!("Blood Crypt"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -527,22 +464,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_8() {
-    let card = ALL_CARDS
-      .card_from_name("History of Benalia")
-      .expect("Card named \"History of Benalia\"");
+    let card = card!("History of Benalia");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Plains")
-        .expect("Card named \"Plains\""),
-      ALL_CARDS
-        .card_from_name("Sacred Foundry")
-        .expect("Card named \"Sacred Foundry\""),
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Dragonskull Summit")
-        .expect("Card named \"Dragonskull Summit\""),
+      card!("Plains"),
+      card!("Sacred Foundry"),
+      card!("Detection Tower"),
+      card!("Dragonskull Summit"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -550,19 +477,11 @@ mod tests {
 
   #[test]
   fn cards_can_pay_9() {
-    let card = ALL_CARDS
-      .card_from_name("Niv-Mizzet, Parun")
-      .expect("Card named \"Niv-Mizzet, Parun\"");
+    let card = card!("Niv-Mizzet, Parun");
     let opening = vec![
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Sulfur Falls\""),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -570,14 +489,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let opening = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Dragonskull Summit"),
+      card!("Dragonskull Summit"),
+      card!("Blood Crypt"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -585,14 +504,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_1() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let opening = vec![
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
+      card!("Drowned Catacomb"),
+      card!("Drowned Catacomb"),
+      card!("Steam Vents"),
+      card!("Sulfur Falls"),
+      card!("Steam Vents"),
+      card!("Dragonskull Summit"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     let result = hand.play_cmc_auto_tap(&card);
@@ -601,14 +520,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_2() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let opening = vec![
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Dragonskull Summit"),
+      card!("Drowned Catacomb"),
+      card!("Blood Crypt"),
+      card!("Watery Grave"),
     ];
     let hand = Hand::from_opening_and_draws(&opening, &[]);
     let result = hand.play_cmc_auto_tap(&card);
@@ -617,16 +536,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_3() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Island"), card!("Watery Grave"), card!("Steam Vents")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
+      card!("Mountain"),
+      card!("Sulfur Falls"),
+      card!("Dragonskull Summit"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let res = hand.play_cmc_auto_tap(&card);
@@ -635,16 +550,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_4() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Island"), card!("Watery Grave"), card!("Steam Vents")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Dragonskull Summit").unwrap(),
+      card!("Mountain"),
+      card!("Detection Tower"),
+      card!("Dragonskull Summit"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -652,16 +563,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_5() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Island"), card!("Watery Grave"), card!("Steam Vents")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Memorial to Folly").unwrap(),
+      card!("Mountain"),
+      card!("Sulfur Falls"),
+      card!("Memorial to Folly"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -669,17 +576,13 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_6() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Island"), card!("Watery Grave"), card!("Steam Vents")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Highland Lake").unwrap(),
-      ALL_CARDS.card_from_name("Memorial to Folly").unwrap(),
+      card!("Mountain"),
+      card!("Sulfur Falls"),
+      card!("Highland Lake"),
+      card!("Memorial to Folly"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -688,17 +591,13 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_7() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Island"), card!("Watery Grave"), card!("Steam Vents")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dimir Guildgate").unwrap(),
-      ALL_CARDS.card_from_name("Memorial to Folly").unwrap(),
+      card!("Mountain"),
+      card!("Sulfur Falls"),
+      card!("Dimir Guildgate"),
+      card!("Memorial to Folly"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -707,17 +606,17 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_8() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Island").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Island"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -726,17 +625,17 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_9() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Island"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -745,16 +644,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_10() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -763,16 +662,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_11() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dimir Guildgate").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Dimir Guildgate"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -784,16 +683,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_11_0() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dimir Guildgate").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Dimir Guildgate"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -803,16 +702,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_12() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Steam Vents"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -821,16 +720,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_13() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Steam Vents"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -839,16 +738,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_14() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dimir Guildgate").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Dimir Guildgate"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -857,16 +756,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_15() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Dimir Guildgate").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Dimir Guildgate"),
+      card!("Steam Vents"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -875,16 +774,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_16() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Sulfur Falls"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -893,16 +792,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_17() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Mountain"), card!("Mountain"), card!("Sulfur Falls")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Mountain"),
+      card!("Drowned Catacomb"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -911,16 +806,12 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_18() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
-    let lands = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-    ];
+    let card = card!("Niv-Mizzet, Parun");
+    let lands = vec![card!("Mountain"), card!("Mountain"), card!("Sulfur Falls")];
     let draws = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Drowned Catacomb"),
+      card!("Mountain"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -930,16 +821,16 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_19() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Island").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
+      card!("Mountain"),
+      card!("Island"),
+      card!("Drowned Catacomb"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -948,17 +839,17 @@ mod tests {
 
   #[test]
   fn cards_can_pay_10_21() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
+      card!("Sulfur Falls"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Drowned Catacomb").unwrap(),
-      ALL_CARDS.card_from_name("Island").unwrap(),
+      card!("Mountain"),
+      card!("Mountain"),
+      card!("Drowned Catacomb"),
+      card!("Island"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -967,28 +858,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_11() {
-    let card = ALL_CARDS
-      .card_from_name("Niv-Mizzet, Parun")
-      .expect("Card named \"Niv-Mizzet, Parun\"");
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-      ALL_CARDS
-        .card_from_name("Dragonskull Summit")
-        .expect("Card named \"Dragonskull Summit\""),
-      ALL_CARDS
-        .card_from_name("Dragonskull Summit")
-        .expect("Card named \"Dragonskull Summit\""),
-      ALL_CARDS
-        .card_from_name("Dragonskull Summit")
-        .expect("Card named \"Dragonskull Summit\""),
+      card!("Watery Grave"),
+      card!("Watery Grave"),
+      card!("Watery Grave"),
+      card!("Dragonskull Summit"),
+      card!("Dragonskull Summit"),
+      card!("Dragonskull Summit"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -996,28 +873,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_12() {
-    let card = ALL_CARDS
-      .card_from_name("Niv-Mizzet, Parun")
-      .expect("Card named \"Niv-Mizzet, Parun\"");
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Mountain")
-        .expect("Card named \"Mountain \""),
-      ALL_CARDS
-        .card_from_name("Drowned Catacomb")
-        .expect("Card named \"Drowned Catacomb\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Blood Crypt")
-        .expect("Card named \"Blood Crypt\""),
+      card!("Steam Vents"),
+      card!("Mountain"),
+      card!("Drowned Catacomb"),
+      card!("Watery Grave"),
+      card!("Steam Vents"),
+      card!("Blood Crypt"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -1025,59 +888,32 @@ mod tests {
 
   #[test]
   fn cards_can_pay_13() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Detection Tower\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Detection Tower"), card!("Watery Grave")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
   }
 
   #[test]
   fn cards_can_pay_14() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Plains\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Watery Grave"), card!("Watery Grave")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
   }
 
   #[test]
   fn cards_can_pay_15() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![ALL_CARDS
-      .card_from_name("Watery Grave")
-      .expect("Card named \"Watery Grave\"")];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Watery Grave")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
   }
 
   #[test]
   fn cards_can_pay_16() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
-      ALL_CARDS.card_from_name("Sulfur Falls").unwrap(),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Swamp"), card!("Sulfur Falls")];
     // Always play Sulfur Falls t1, Swamp t2
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -1085,79 +921,38 @@ mod tests {
 
   #[test]
   fn cards_can_pay_17() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS
-        .card_from_name("Swamp")
-        .expect("Card named \"Swamp\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Swamp"), card!("Watery Grave")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
   }
 
   #[test]
   fn cards_can_pay_18() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Sulfur Falls\""),
-      ALL_CARDS
-        .card_from_name("Watery Grave")
-        .expect("Card named \"Watery Grave\""),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Detection Tower"), card!("Watery Grave")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
   }
 
   #[test]
   fn cards_can_pay_19() {
-    let card = ALL_CARDS
-      .card_from_name("Cast Down")
-      .expect("Card named \"Cast Down\"");
-    let lands = vec![
-      ALL_CARDS
-        .card_from_name("Detection Tower")
-        .expect("Card named \"Sulfur Falls\""),
-      ALL_CARDS
-        .card_from_name("Sulfur Falls")
-        .expect("Card named \"Watery Grave\""),
-    ];
+    let card = card!("Cast Down");
+    let lands = vec![card!("Detection Tower"), card!("Sulfur Falls")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
   }
 
   #[test]
   fn cards_can_pay_20() {
-    let card = ALL_CARDS
-      .card_from_name("Niv-Mizzet, Parun")
-      .expect("Card named \"Niv-Mizzet, Parun\"");
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Steam Vents")
-        .expect("Card named \"Steam Vents\""),
-      ALL_CARDS
-        .card_from_name("Blood Crypt")
-        .expect("Card named \"Blood Crypt\""),
-      ALL_CARDS
-        .card_from_name("Blood Crypt")
-        .expect("Card named \"Blood Crypt\""),
-      ALL_CARDS
-        .card_from_name("Blood Crypt")
-        .expect("Card named \"Blood Crypt\""),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Blood Crypt"),
+      card!("Blood Crypt"),
+      card!("Blood Crypt"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -1165,14 +960,14 @@ mod tests {
 
   #[test]
   fn cards_can_pay_21() {
-    let card = ALL_CARDS.card_from_name("Niv-Mizzet, Parun").unwrap();
+    let card = card!("Niv-Mizzet, Parun");
     let lands = vec![
-      ALL_CARDS.card_from_name("Plains").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Steam Vents").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
-      ALL_CARDS.card_from_name("Blood Crypt").unwrap(),
+      card!("Plains"),
+      card!("Steam Vents"),
+      card!("Steam Vents"),
+      card!("Blood Crypt"),
+      card!("Blood Crypt"),
+      card!("Blood Crypt"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, false);
@@ -1180,8 +975,8 @@ mod tests {
 
   #[test]
   fn cards_can_pay_22() {
-    let card = ALL_CARDS.card_from_name("Appetite For Brains").unwrap();
-    let lands = vec![ALL_CARDS.card_from_name("Memorial to Folly").unwrap()];
+    let card = card!("Appetite For Brains");
+    let lands = vec![card!("Memorial to Folly")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     let res = hand.play_cmc_auto_tap(&card);
     assert_eq!(res.paid, true);
@@ -1189,21 +984,21 @@ mod tests {
 
   #[test]
   fn cards_can_pay_23() {
-    let card = ALL_CARDS.card_from_name("Darksteel Colossus").unwrap();
+    let card = card!("Darksteel Colossus");
     let lands = vec![
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -1211,21 +1006,21 @@ mod tests {
 
   #[test]
   fn cards_can_pay_24() {
-    let card = ALL_CARDS.card_from_name("Darksteel Colossus").unwrap();
+    let card = card!("Darksteel Colossus");
     let lands = vec![
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
+      card!("Detection Tower"),
+      card!("Swamp"),
+      card!("Detection Tower"),
+      card!("Detection Tower"),
+      card!("Swamp"),
+      card!("Swamp"),
+      card!("Detection Tower"),
     ];
     let draws = vec![
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
-      ALL_CARDS.card_from_name("Detection Tower").unwrap(),
-      ALL_CARDS.card_from_name("Swamp").unwrap(),
+      card!("Detection Tower"),
+      card!("Swamp"),
+      card!("Detection Tower"),
+      card!("Swamp"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     assert_eq!(hand.play_cmc_auto_tap(&card).paid, true);
@@ -1233,8 +1028,8 @@ mod tests {
 
   #[test]
   fn colorless_0() {
-    let card = ALL_CARDS.card_from_name("The Immortal Sun").unwrap();
-    let land = ALL_CARDS.card_from_name("Boros Guildgate").unwrap();
+    let card = card!("The Immortal Sun");
+    let land = card!("Boros Guildgate");
     let draws = vec![land, land, land, land, land, land];
     let hand = Hand::from_opening_and_draws(&[], &draws);
     let result = hand.draw_cmc_auto_tap(&card);
@@ -1244,8 +1039,8 @@ mod tests {
 
   #[test]
   fn colorless_1() {
-    let card = ALL_CARDS.card_from_name("The Immortal Sun").unwrap();
-    let land = ALL_CARDS.card_from_name("Steam Vents").unwrap();
+    let card = card!("The Immortal Sun");
+    let land = card!("Steam Vents");
     let lands = vec![land, land, land, land, land, land];
     let hand = Hand::from_opening_and_draws(&[], &lands);
     let result = hand.draw_cmc_auto_tap(&card);
@@ -1256,8 +1051,8 @@ mod tests {
   #[test]
   fn colorless_2() {
     // checklands are ignored
-    let card = ALL_CARDS.card_from_name("The Immortal Sun").unwrap();
-    let land = ALL_CARDS.card_from_name("Sulfur Falls").unwrap();
+    let card = card!("The Immortal Sun");
+    let land = card!("Sulfur Falls");
     let lands = vec![land, land, land, land, land, land];
     let hand = Hand::from_opening_and_draws(&[], &lands);
     let result = hand.draw_cmc_auto_tap(&card);
@@ -1268,9 +1063,9 @@ mod tests {
   //
   #[test]
   fn on_the_play() {
-    let card = ALL_CARDS.card_from_name("Opt").unwrap();
+    let card = card!("Opt");
     let lands = vec![];
-    let draws = vec![ALL_CARDS.card_from_name("Island").unwrap()];
+    let draws = vec![card!("Island")];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let res = hand.play_cmc_auto_tap(&card);
     assert_eq!(res.paid, false);
@@ -1279,9 +1074,9 @@ mod tests {
 
   #[test]
   fn on_the_draw() {
-    let card = ALL_CARDS.card_from_name("Opt").unwrap();
+    let card = card!("Opt");
     let lands = vec![];
-    let draws = vec![ALL_CARDS.card_from_name("Island").unwrap()];
+    let draws = vec![card!("Island")];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let res = hand.draw_cmc_auto_tap(card);
     assert_eq!(res.paid, true);
@@ -1291,8 +1086,8 @@ mod tests {
   // shockland
   #[test]
   fn shock_land_0() {
-    let card = ALL_CARDS.card_from_name("Appetite For Brains").unwrap();
-    let lands = vec![ALL_CARDS.card_from_name("Overgrown Tomb").unwrap()];
+    let card = card!("Appetite For Brains");
+    let lands = vec![card!("Overgrown Tomb")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     let result = hand.play_cmc_auto_tap(card);
     assert_eq!(result.paid, true);
@@ -1315,7 +1110,7 @@ mod tests {
 
   #[test]
   fn zero_mana_card_0() {
-    let card = ALL_CARDS.card_from_name("Ancestral Vision").unwrap();
+    let card = card!("Ancestral Vision");
     let opening = &[card];
     let hand = Hand::from_opening_and_draws(opening, &[]);
     let obs = hand.play_cmc_auto_tap(&card);
@@ -1325,13 +1120,13 @@ mod tests {
 
   #[test]
   fn yarok_test_0() {
-    let card = ALL_CARDS.card_from_name("Yarok, the Desecrated").unwrap();
+    let card = card!("Yarok, the Desecrated");
     let h = vec![
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Mountain").unwrap(),
-      ALL_CARDS.card_from_name("Waterlogged Grove").unwrap(),
-      ALL_CARDS.card_from_name("Watery Grave").unwrap(),
-      ALL_CARDS.card_from_name("Overgrown Tomb").unwrap(),
+      card!("Mountain"),
+      card!("Mountain"),
+      card!("Waterlogged Grove"),
+      card!("Watery Grave"),
+      card!("Overgrown Tomb"),
     ];
     let hand = Hand::from_opening_and_draws(&h, &[]);
     let result = hand.play_cmc_auto_tap(&card);

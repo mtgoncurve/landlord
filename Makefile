@@ -1,6 +1,6 @@
 all:
 	@echo Available tasks:
-	@echo make card-update '# Download the latest Scryfall JSON dump and generate a new AllCards.landlord'
+	@echo make card-update '# Download the latest Scryfall JSON dump and generate a new data/all_cards.landlord'
 	@echo make test        '# Run cargo test'
 	@echo make clean       '# Run cargo clean'
 	@echo make check       '# Run cargo check'

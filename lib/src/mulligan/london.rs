@@ -181,15 +181,12 @@ impl Mulligan for London {
 
 #[cfg(test)]
 mod tests {
-  use crate::card::Collection;
+  use crate::card::*;
   use crate::hand::*;
   use crate::mulligan::london::*;
   use crate::simulation::*;
   use std::collections::HashSet;
 
-  lazy_static! {
-    static ref ALL_CARDS: Collection = Collection::all().expect("Collection::all failed");
-  }
   #[test]
   fn mulligan_discard_test_never() {
     let code = "
@@ -201,7 +198,7 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 100;
     let draws = 0;
     // Ignore land requirements
@@ -220,6 +217,7 @@ mod tests {
       }
     }
   }
+
   #[test]
   fn mulligan_discard_test_to_6() {
     let code = "
@@ -231,25 +229,15 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let look_for = {
       let mut hs = HashSet::new();
-      hs.insert(ALL_CARDS.card_from_name("Cleansing Nova").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Vraska, Relic Seeker")
-          .unwrap()
-          .hash,
-      );
-      hs.insert(ALL_CARDS.card_from_name("Sinister Sabotage").unwrap().hash);
-      hs.insert(ALL_CARDS.card_from_name("Opt").unwrap().hash);
-      hs.insert(ALL_CARDS.card_from_name("Vraska's Contempt").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Cry of the Carnarium")
-          .unwrap()
-          .hash,
-      );
+      hs.insert(card!("Cleansing Nova").hash);
+      hs.insert(card!("Vraska, Relic Seeker").hash);
+      hs.insert(card!("Sinister Sabotage").hash);
+      hs.insert(card!("Opt").hash);
+      hs.insert(card!("Vraska's Contempt").hash);
+      hs.insert(card!("Cry of the Carnarium").hash);
       vec![hs]
     };
     let runs = 100;
@@ -258,7 +246,7 @@ mod tests {
     let mut mulligan = London::always(6);
     mulligan.acceptable_hand_list = look_for;
     {
-      let should_not_be_in_hand = ALL_CARDS.card_from_name("Thought Erasure").unwrap();
+      let should_not_be_in_hand = card!("Thought Erasure");
       let sim = Simulation::from_config(&SimulationConfig {
         run_count: runs,
         draw_count: draws,
@@ -289,24 +277,14 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let look_for = {
       let mut hs = HashSet::new();
-      hs.insert(ALL_CARDS.card_from_name("Cleansing Nova").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Vraska, Relic Seeker")
-          .unwrap()
-          .hash,
-      );
-      hs.insert(ALL_CARDS.card_from_name("Sinister Sabotage").unwrap().hash);
-      hs.insert(ALL_CARDS.card_from_name("Vraska's Contempt").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Cry of the Carnarium")
-          .unwrap()
-          .hash,
-      );
+      hs.insert(card!("Cleansing Nova").hash);
+      hs.insert(card!("Vraska, Relic Seeker").hash);
+      hs.insert(card!("Sinister Sabotage").hash);
+      hs.insert(card!("Vraska's Contempt").hash);
+      hs.insert(card!("Cry of the Carnarium").hash);
       vec![hs]
     };
     let runs = 100;
@@ -315,8 +293,8 @@ mod tests {
     let mut mulligan = London::always(5);
     mulligan.acceptable_hand_list = look_for;
     {
-      let bada = ALL_CARDS.card_from_name("Thought Erasure").unwrap();
-      let badb = ALL_CARDS.card_from_name("Opt").unwrap();
+      let bada = card!("Thought Erasure");
+      let badb = card!("Opt");
       let sim = Simulation::from_config(&SimulationConfig {
         run_count: runs,
         draw_count: draws,
@@ -347,24 +325,14 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let look_for = {
       let mut hs = HashSet::new();
-      hs.insert(ALL_CARDS.card_from_name("Cleansing Nova").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Vraska, Relic Seeker")
-          .unwrap()
-          .hash,
-      );
-      hs.insert(ALL_CARDS.card_from_name("Sinister Sabotage").unwrap().hash);
-      hs.insert(ALL_CARDS.card_from_name("Vraska's Contempt").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Cry of the Carnarium")
-          .unwrap()
-          .hash,
-      );
+      hs.insert(card!("Cleansing Nova").hash);
+      hs.insert(card!("Vraska, Relic Seeker").hash);
+      hs.insert(card!("Sinister Sabotage").hash);
+      hs.insert(card!("Vraska's Contempt").hash);
+      hs.insert(card!("Cry of the Carnarium").hash);
       vec![hs]
     };
     let runs = 100;
@@ -373,8 +341,8 @@ mod tests {
     let mut mulligan = London::always(1);
     mulligan.acceptable_hand_list = look_for;
     {
-      let bada = ALL_CARDS.card_from_name("Thought Erasure").unwrap();
-      let badb = ALL_CARDS.card_from_name("Opt").unwrap();
+      let bada = card!("Thought Erasure");
+      let badb = card!("Opt");
       let sim = Simulation::from_config(&SimulationConfig {
         run_count: runs,
         draw_count: draws,
@@ -405,24 +373,14 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let look_for = {
       let mut hs = HashSet::new();
-      hs.insert(ALL_CARDS.card_from_name("Cleansing Nova").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Vraska, Relic Seeker")
-          .unwrap()
-          .hash,
-      );
-      hs.insert(ALL_CARDS.card_from_name("Sinister Sabotage").unwrap().hash);
-      hs.insert(ALL_CARDS.card_from_name("Vraska's Contempt").unwrap().hash);
-      hs.insert(
-        ALL_CARDS
-          .card_from_name("Cry of the Carnarium")
-          .unwrap()
-          .hash,
-      );
+      hs.insert(card!("Cleansing Nova").hash);
+      hs.insert(card!("Vraska, Relic Seeker").hash);
+      hs.insert(card!("Sinister Sabotage").hash);
+      hs.insert(card!("Vraska's Contempt").hash);
+      hs.insert(card!("Cry of the Carnarium").hash);
       vec![hs]
     };
     let runs = 100;
@@ -431,8 +389,8 @@ mod tests {
     let mut mulligan = London::always(1);
     mulligan.acceptable_hand_list = look_for;
     {
-      let bada = ALL_CARDS.card_from_name("Thought Erasure").unwrap();
-      let badb = ALL_CARDS.card_from_name("Opt").unwrap();
+      let bada = card!("Thought Erasure");
+      let badb = card!("Opt");
       let sim = Simulation::from_config(&SimulationConfig {
         run_count: runs,
         draw_count: draws,
@@ -463,7 +421,7 @@ mod tests {
         1 Thought Erasure
         1 Cry of the Carnarium (RNA) 70
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 100;
     let draws = 0;
     // Ignore land requirements
@@ -488,12 +446,8 @@ mod tests {
   // Battlefield?" in the article https://www.channelfireball.com/all-mulligan/articles/the-london-mulligan-rule-mathematically-benefits-strategies-that-rely-on-specific-cards/
   #[test]
   fn karsten_check_0() {
-    let card = ALL_CARDS
-      .card_from_name("Ornithopter")
-      .expect("Card named \"Ornithopter\"");
-    let other = ALL_CARDS
-      .card_from_name("Mountain")
-      .expect("Card named \"Ornithopter\"");
+    let card = card!("Ornithopter");
+    let other = card!("Mountain");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..4 {
       cards.push(card.clone());
@@ -616,18 +570,10 @@ mod tests {
   // https://www.channelfireball.com/all-mulligan/articles/the-london-mulligan-rule-mathematically-benefits-strategies-that-rely-on-specific-cards/
   #[test]
   fn karsten_check_1() {
-    let combo_a = ALL_CARDS
-      .card_from_name("Fountain of Youth")
-      .expect("Card named \"Fountain of Youth\"");
-    let combo_b = ALL_CARDS
-      .card_from_name("Bone Saw")
-      .expect("Card named \"Bone Saw\"");
-    let land = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
-    let other = ALL_CARDS
-      .card_from_name("Thought Erasure")
-      .expect("Card named \"Thought Erasure\"");
+    let combo_a = card!("Fountain of Youth");
+    let combo_b = card!("Bone Saw");
+    let land = card!("Island");
+    let other = card!("Thought Erasure");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..8 {
       cards.push(combo_a.clone());
@@ -734,15 +680,9 @@ mod tests {
   // close... to within a few %
   #[test]
   fn karsten_check_2() {
-    let land = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
-    let spell1 = ALL_CARDS
-      .card_from_name("Thought Erasure")
-      .expect("Card named \"Thought Erasure\"");
-    let spell2 = ALL_CARDS
-      .card_from_name("Dark Sphere")
-      .expect("Card named \"Dark Sphere\"");
+    let land = card!("Island");
+    let spell1 = card!("Thought Erasure");
+    let spell2 = card!("Dark Sphere");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..21 {
       cards.push(land.clone());
@@ -811,7 +751,8 @@ mod tests {
       });
       let good_hands = good_hand_count(&sim.hands);
       let p = good_hands as f64 / runs as f64;
-      assert!(f64::abs(p - 0.8994) < 0.03);
+      dbg!(p);
+      assert!(f64::abs(p - 0.8994) < 0.035);
     }
     // Down to 5
     {
@@ -847,15 +788,9 @@ mod tests {
   // https://tmikonen.github.io/quantitatively/2019-03-01-london-mulligan/
   #[test]
   fn tmikonen_check_row_0() {
-    let combo_a = ALL_CARDS
-      .card_from_name("Fountain of Youth")
-      .expect("Card named \"Fountain of Youth\"");
-    let combo_b = ALL_CARDS
-      .card_from_name("Bone Saw")
-      .expect("Card named \"Bone Saw\"");
-    let other = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
+    let combo_a = card!("Fountain of Youth");
+    let combo_b = card!("Bone Saw");
+    let other = card!("Island");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..4 {
       cards.push(combo_a.clone());
@@ -918,15 +853,9 @@ mod tests {
   // https://tmikonen.github.io/quantitatively/2019-03-01-london-mulligan/
   #[test]
   fn tmikonen_check_row_1() {
-    let combo_a = ALL_CARDS
-      .card_from_name("Fountain of Youth")
-      .expect("Card named \"Fountain of Youth\"");
-    let combo_b = ALL_CARDS
-      .card_from_name("Bone Saw")
-      .expect("Card named \"Bone Saw\"");
-    let other = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
+    let combo_a = card!("Fountain of Youth");
+    let combo_b = card!("Bone Saw");
+    let other = card!("Island");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..8 {
       cards.push(combo_a.clone());
@@ -994,15 +923,9 @@ mod tests {
   // https://tmikonen.github.io/quantitatively/2019-03-01-london-mulligan/
   #[test]
   fn tmikonen_check_row_4() {
-    let combo_a = ALL_CARDS
-      .card_from_name("Fountain of Youth")
-      .expect("Card named \"Fountain of Youth\"");
-    let combo_b = ALL_CARDS
-      .card_from_name("Bone Saw")
-      .expect("Card named \"Bone Saw\"");
-    let other = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
+    let combo_a = card!("Fountain of Youth");
+    let combo_b = card!("Bone Saw");
+    let other = card!("Island");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..3 {
       cards.push(combo_a.clone());
@@ -1070,15 +993,9 @@ mod tests {
   // First probability result under "Probability of drawing a certain combination"
   #[test]
   fn tmikonen_misc_check_0() {
-    let combo_a = ALL_CARDS
-      .card_from_name("Ancestral Recall")
-      .expect("Card named \"Ancestral Recall\"");
-    let combo_b = ALL_CARDS
-      .card_from_name("Island")
-      .expect("Card named \"Island\"");
-    let other = ALL_CARDS
-      .card_from_name("Bone Saw")
-      .expect("Card named \"Bone Saw\"");
+    let combo_a = card!("Ancestral Recall");
+    let combo_b = card!("Island");
+    let other = card!("Bone Saw");
     let mut cards = Vec::with_capacity(60);
     for _ in 0..1 {
       cards.push(combo_a.clone());
@@ -1130,7 +1047,7 @@ mod tests {
     1 Ancestral Vision
     1 Crimson Kobolds
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 10;
     let draws = 0;
     // Ignore land requirements
@@ -1156,7 +1073,7 @@ mod tests {
     1 Ancestral Vision
     1 Crimson Kobolds
         ";
-    let deck = ALL_CARDS.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = decklist!(code);
     let runs = 10;
     let draws = 0;
     // Ignore land requirements
