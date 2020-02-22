@@ -15,7 +15,7 @@ if [ $? -eq 1 ]; then
 fi
 
 curl "https://archive.scryfall.com/json/$FILE.json" -o "$INPUT"
-RUST_LOG=info RUST_BACKTRACE=full cargo run --release --bin scryfall2landlord "$INPUT" "$OUTPUT"
+RUST_LOG=info cargo run --release --bin scryfall2landlord "$INPUT" "$OUTPUT"
 # Was a new artifact generated? If so, then test it and upload the input file to S3
 git diff --exit-code --quiet
 if [ $? -eq 1 ] && [ "$CI" -eq 1 ]; then
