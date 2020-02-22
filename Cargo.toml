@@ -3,4 +3,5 @@ members = [
   "lib",
   "bins/scryfall2landlord",
   "bins/mtggoldfish2landlord",
+  "bins/mtga_log_parse",
 ]
