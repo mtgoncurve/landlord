@@ -15,6 +15,7 @@ extern crate rand;
 extern crate regex;
 extern crate wasm_bindgen;
 
+#[macro_use]
 pub mod card;
 pub mod hand;
 pub mod mtgoncurve;

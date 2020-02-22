@@ -4,7 +4,7 @@ set -x
 DATE=$(date "+%Y-%m-%d")
 FILE="scryfall-oracle-cards"
 INPUT="$FILE-$DATE.json"
-OUTPUT="lib/src/AllCards.landlord"
+OUTPUT="data/all_cards.landlord"
 CI=${LANDLORD_IS_CI:-0}
 
 git diff --exit-code --quiet
