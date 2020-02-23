@@ -17,11 +17,13 @@ extern crate wasm_bindgen;
 
 #[macro_use]
 pub mod card;
+#[macro_use]
+pub mod deck;
 pub mod hand;
-pub mod mtgoncurve;
+pub mod mana_cost;
 pub mod mulligan;
-pub mod parse_mana_costs;
+pub mod scryfall;
 pub mod simulation;
 
+mod mtgoncurve;
 pub use crate::mtgoncurve::run;
-pub use crate::parse_mana_costs::parse_mana_costs;
