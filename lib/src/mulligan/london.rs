@@ -47,7 +47,7 @@ impl London {
 }
 
 impl Mulligan for London {
-  fn simulate_hand(&self, mut rng: &mut impl Rng, deck: &[Card], draws: usize) -> Hand {
+  fn simulate_hand(&self, mut rng: &mut impl Rng, deck: &[&Card], draws: usize) -> Hand {
     let deck_size = deck.len();
 
     // The number of cards to draw for the starting hand, capped by deck_size
@@ -77,7 +77,7 @@ impl Mulligan for London {
         .partial_shuffle(&mut rng, cards_to_draw)
         .0
         .iter()
-        .map(|i| &deck[*i])
+        .map(|i| deck[*i])
         .collect();
       // Starting hand consists of the first starting_hand_size cards
       let starting_hand = &mut shuffled_deck[..starting_hand_size];
@@ -182,6 +182,7 @@ impl Mulligan for London {
 #[cfg(test)]
 mod tests {
   use crate::card::*;
+  use crate::deck::*;
   use crate::hand::*;
   use crate::mulligan::london::*;
   use crate::simulation::*;
@@ -455,7 +456,7 @@ mod tests {
     for _ in 0..56 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(card.hash);
@@ -585,7 +586,7 @@ mod tests {
     for _ in 0..24 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(combo_a.hash);
@@ -693,7 +694,7 @@ mod tests {
     for _ in 0..20 {
       cards.push(spell2.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs1 = HashSet::new();
       let mut hs2 = HashSet::new();
@@ -801,7 +802,7 @@ mod tests {
     for _ in 0..46 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(combo_a.hash);
@@ -866,7 +867,7 @@ mod tests {
     for _ in 0..44 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(combo_a.hash);
@@ -936,7 +937,7 @@ mod tests {
     for _ in 0..50 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(combo_a.hash);
@@ -1006,7 +1007,7 @@ mod tests {
     for _ in 0..38 {
       cards.push(other.clone());
     }
-    let deck = Collection::from_cards(cards);
+    let deck = Deck::from_cards(cards);
     let look_for = {
       let mut hs = HashSet::new();
       hs.insert(combo_a.hash);

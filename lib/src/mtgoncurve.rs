@@ -1,7 +1,9 @@
 //! # https://mtgoncurve.com interface
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
-use crate::card::{Card, CardKind, ManaCost, ALL_CARDS};
+use crate::card::{Card, CardKind, ALL_CARDS};
+use crate::deck::Deck;
+use crate::mana_cost::ManaCost;
 use crate::mulligan::London;
 use crate::simulation::{Observations, Simulation, SimulationConfig};
 
@@ -53,7 +55,7 @@ struct Output {
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct MtgOnCurveCard {
+struct MtgOnCurveCard {
     /// String representing the card name
     pub name: String,
     /// String representing the card mana cost, in "{X}{R}{R}" style format
@@ -70,8 +72,8 @@ pub struct MtgOnCurveCard {
     pub mana_cost: ManaCost,
 }
 
-impl From<&&Card> for MtgOnCurveCard {
-    fn from(card: &&Card) -> Self {
+impl From<&Card> for MtgOnCurveCard {
+    fn from(card: &Card) -> Self {
         Self {
             name: card.name.clone(),
             mana_cost_string: card.mana_cost_string.clone(),
@@ -140,15 +142,15 @@ pub fn run(input: &JsValue) -> JsValue {
 }
 
 fn run_impl(input: &Input) -> Result<Output, Error> {
-    let deck = match ALL_CARDS.from_deck_list(&input.code) {
+    let deck = match Deck::from_list(&input.code) {
         Err(e) => return Err(Error::BadDeckcode(e.0)),
-        Ok((m, _)) => m,
+        Ok(deck) => deck,
     };
-    if deck.cards.is_empty() {
+    if deck.is_empty() {
         return Err(Error::EmptyDeckcode);
     }
-    let highest_turn = deck
-        .cards
+    let deck_list = deck.flatten();
+    let highest_turn = deck_list
         .iter()
         .fold(0, |max, c| std::cmp::max(max, c.turn as usize));
     let mut mulligan = London::never();
@@ -157,7 +159,7 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
     for (i, acceptable_hand) in input.acceptable_hand_list.iter().enumerate() {
         let mut keep_cards = HashSet::new();
         for card_name in acceptable_hand {
-            if let Some(card) = deck.card_from_name(&card_name) {
+            if let Some(card) = ALL_CARDS.card_from_name(&card_name) {
                 keep_cards.insert(card.hash);
             } else {
                 return Err(Error::BadCardNameInRow(i, card_name.clone()));
@@ -174,7 +176,7 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         deck: &deck,
         on_the_play: input.on_the_play,
     });
-    let non_land_cards: HashSet<_> = deck.cards.iter().filter(|c| !c.is_land()).collect();
+    let non_land_cards: HashSet<_> = deck_list.iter().filter(|c| !c.is_land()).collect();
     let mut outputs = Output::new();
     outputs.accumulated_opening_hand_size = sim.accumulated_opening_hand_size;
     outputs.accumulated_opening_hand_land_count = sim.accumulated_opening_hand_land_count;
@@ -183,10 +185,10 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .iter()
         .map(|card| {
             let o = sim.observations_for_card_by_turn(&card, card.turn as usize);
-            let card_count = deck.cards.iter().filter(|c| c.hash == card.hash).count();
+            let card_count = deck_list.iter().filter(|c| c.hash == card.hash).count();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card: card.into(),
+                card: (**card).into(),
                 cmc,
                 card_count,
                 observations: o,
@@ -201,14 +203,14 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .card_observations
         .sort_by(|a, b| a.card.mana_cost.cmc().cmp(&b.card.mana_cost.cmc()));
 
-    let land_cards: HashSet<_> = deck.cards.iter().filter(|c| c.is_land()).collect();
+    let land_cards: HashSet<_> = deck_list.iter().filter(|c| c.is_land()).collect();
     outputs.land_counts = land_cards
         .iter()
         .map(|card| {
-            let card_count = deck.cards.iter().filter(|c| c.name == card.name).count();
+            let card_count = deck_list.iter().filter(|c| c.hash == card.hash).count();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card: card.into(),
+                card: (**card).into(),
                 cmc,
                 card_count,
                 observations: Observations::new(),
@@ -235,7 +237,7 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
             / non_land_cards.len() as f64
     };
 
-    for card in &deck.cards {
+    for card in &deck_list {
         if card.is_land() {
             outputs.total_land_counts.count(&card.mana_cost);
         }

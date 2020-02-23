@@ -2,10 +2,9 @@
 extern crate criterion;
 
 use criterion::Criterion;
-use landlord::card::Collection;
+use landlord::deck::Deck;
 use landlord::mulligan::London;
 use landlord::simulation::{Simulation, SimulationConfig};
-use std::collections::HashSet;
 
 fn criterion_function(c: &mut Criterion) {
     let code = "
@@ -28,8 +27,7 @@ fn criterion_function(c: &mut Criterion) {
     3 Sulfur Falls
     4 Watery Grave
     ";
-    let collection = Collection::all().expect("Collection::all failed");
-    let deck = collection.from_deck_list(code).expect("Bad deckcode").0;
+    let deck = Deck::from_list(code).expect("Bad deckcode");
     c.bench_function_over_inputs(
         "reddit_deck card_observations",
         move |b, runs| {
@@ -37,7 +35,7 @@ fn criterion_function(c: &mut Criterion) {
             let highest_cmc = deck
                 .cards
                 .iter()
-                .fold(0, |max, c| std::cmp::max(max, c.turn as usize));
+                .fold(0, |max, (c, _)| std::cmp::max(max, c.turn as usize));
             let sim = Simulation::from_config(&SimulationConfig {
                 run_count: **runs,
                 draw_count: highest_cmc,
@@ -45,9 +43,8 @@ fn criterion_function(c: &mut Criterion) {
                 deck: &deck,
                 on_the_play: false,
             });
-            let uniques: HashSet<_> = deck.cards.iter().filter(|c| !c.is_land()).collect();
             b.iter(|| {
-                uniques.iter().for_each(|c| {
+                deck.cards.iter().for_each(|(c, _)| {
                     sim.observations_for_card(&c);
                 });
             })

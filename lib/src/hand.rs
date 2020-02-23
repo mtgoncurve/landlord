@@ -1,5 +1,6 @@
 //! # Simulation hands and auto tap algorithm
-use crate::card::{Card, CardKind, Collection, ManaColor, ManaCost};
+use crate::card::{Card, CardKind};
+use crate::mana_cost::{ManaColor, ManaCost};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
 
@@ -91,10 +92,10 @@ impl Hand {
   pub fn from_mulligan<T: Mulligan>(
     mulligan: &T,
     rng: &mut impl Rng,
-    deck: &Collection,
+    deck: &Vec<&Card>,
     draws: usize,
   ) -> Self {
-    mulligan.simulate_hand(rng, &deck.cards, draws)
+    mulligan.simulate_hand(rng, deck, draws)
   }
 
   /// Attempts to tap mana in the opening hand and `draws` to pay the mana cost of the `goal` card

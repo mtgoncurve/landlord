@@ -4,18 +4,12 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
 extern crate landlord;
-#[macro_use]
-extern crate lazy_static;
-
-mod scryfall_json_card;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use landlord::card::{Card, Collection};
-use scryfall_json_card::{Legality, ScryfallJsonCard};
+use landlord::scryfall::{Legality, ScryfallCard};
 use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -60,7 +54,7 @@ fn main() -> Result<(), Error> {
     File::open(uri_path)?.read_to_string(&mut json_file_contents)?;
     let json_val = serde_json::from_str(&json_file_contents)?;
     info!("Deserializing Scryfall JSON");
-    let mut scryfall_cards: Vec<ScryfallJsonCard> = serde_json::from_value(json_val)?;
+    let mut scryfall_cards: Vec<ScryfallCard> = serde_json::from_value(json_val)?;
     // Filter out any cards that are not legal in all formats
     // This should filter out any tokens
     // See https://github.com/mtgoncurve/landlord/issues/4

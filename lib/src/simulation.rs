@@ -1,5 +1,6 @@
 //! # Simulation engine and card observations
-use crate::card::{Card, Collection};
+use crate::card::Card;
+use crate::deck::Deck;
 use crate::hand::{AutoTapResult, Hand, PlayOrder, SimCard};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
@@ -8,7 +9,7 @@ use rand::rngs::SmallRng;
 pub struct SimulationConfig<'a, 'b, M: Mulligan> {
   pub run_count: usize,
   pub draw_count: usize,
-  pub deck: &'a Collection,
+  pub deck: &'a Deck,
   pub mulligan: &'b M,
   pub on_the_play: bool,
 }
@@ -52,7 +53,14 @@ impl Simulation {
     assert!(config.run_count > 0);
     let mut rng = SmallRng::from_entropy();
     let hands: Vec<_> = (0..config.run_count)
-      .map(|_| Hand::from_mulligan(config.mulligan, &mut rng, config.deck, config.draw_count))
+      .map(|_| {
+        Hand::from_mulligan(
+          config.mulligan,
+          &mut rng,
+          &config.deck.flatten(),
+          config.draw_count,
+        )
+      })
       .collect();
     let accumulated_opening_hand_size =
       hands.iter().map(|hand| hand.opening().len()).sum::<usize>();
@@ -121,6 +129,7 @@ impl Simulation {
 #[cfg(test)]
 mod tests {
   use crate::card::*;
+  use crate::deck::*;
   use crate::mulligan::Never;
   use crate::simulation::*;
 
@@ -139,7 +148,7 @@ mod tests {
   #[test]
   fn deck_with_single_zero_mana_card() {
     let card = card!("Ornithopter");
-    let deck = Collection::from_cards(vec![card.clone()]);
+    let deck = Deck::from_cards(vec![card.clone()]);
     let runs = 10;
     let draws = 0;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -255,7 +264,7 @@ mod tests {
     let card = card!("Aura of Dominion");
     let land0 = card!("Island");
     let land1 = card!("Sulfur Falls");
-    let deck = Collection::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
+    let deck = Deck::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
     let draws = 1;
     let runs = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -276,7 +285,7 @@ mod tests {
     let card = card!("Aura of Dominion");
     let land0 = card!("Island");
     let land1 = card!("Sulfur Falls");
-    let deck = Collection::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
+    let deck = Deck::from_cards(vec![card.clone(), land0.clone(), land1.clone()]);
     let draws = 1;
     let runs = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -596,7 +605,7 @@ mod tests {
     59 Cinder Barrens
       ";
     let deck = decklist!(code);
-    let card = &deck.cards[0];
+    let card = card!("Agonizing Remorse");
     assert_eq!(card.kind.is_land(), false);
     let runs = 100;
     let draws = 10;

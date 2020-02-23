@@ -11,5 +11,5 @@ pub trait Mulligan {
   /// * `rng` - A random number generator used to shuffle the deck
   /// * `deck` - A collection of cards that a player starts a game with. See [Deck](https://mtg.gamepedia.com/Deck)
   /// * `draws` - The number of cards to draw after the mulligan process
-  fn simulate_hand(&self, rng: &mut impl Rng, deck: &[Card], draws: usize) -> Hand;
+  fn simulate_hand(&self, rng: &mut impl Rng, deck: &[&Card], draws: usize) -> Hand;
 }
