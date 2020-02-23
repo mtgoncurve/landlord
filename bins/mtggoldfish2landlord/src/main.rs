@@ -20,7 +20,7 @@ use std::io::prelude::*;
 
 macro_rules! fetch {
   ($url:expr) => {{
-    //std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(1));
     info!("Fetching {}", $url);
     reqwest::blocking::get($url)?.text()?
   }};
@@ -71,7 +71,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (title, deck_url_path) in &deck_data {
       let deck_url = format!("https://www.mtggoldfish.com{}", deck_url_path);
-      std::thread::sleep(std::time::Duration::from_secs(3));
       let deck_text = fetch!(&deck_url);
       let deck_doc = Document::from(deck_text.as_str());
       let down_url_paths: Vec<_> = deck_doc
@@ -86,7 +85,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("/deck/arena_download");
       let down_url = format!("https://www.mtggoldfish.com{}", down_url_path);
-      std::thread::sleep(std::time::Duration::from_secs(3));
       let down_text = fetch!(&down_url);
       let down_doc = Document::from(down_text.as_str());
       let deck_text = down_doc
