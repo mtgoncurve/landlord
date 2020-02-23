@@ -1,13 +1,59 @@
 use crate::card::*;
 use crate::mana_cost::parse_mana_costs;
 use crate::scryfall::GameFormat;
-
 use regex::Regex;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deck {
-  pub cards: std::collections::BTreeMap<Card, usize>,
+  pub cards: Vec<DeckCard>,
   pub format: GameFormat,
+  pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeckCard {
+  pub card: Card,
+  pub count: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct DeckBuilder {
+  pub cards: BTreeMap<Card, usize>,
+}
+
+impl DeckBuilder {
+  pub fn new() -> Self {
+    Self {
+      cards: BTreeMap::new(),
+    }
+  }
+
+  pub fn insert(mut self, card: Card) -> Self {
+    let total_count = self.cards.entry(card).or_insert(0);
+    *total_count += 1;
+    Self { cards: self.cards }
+  }
+
+  pub fn insert_count(mut self, card: Card, count: usize) -> Self {
+    let total_count = self.cards.entry(card).or_insert(0);
+    *total_count += count;
+    Self { cards: self.cards }
+  }
+
+  pub fn build(self) -> Deck {
+    let mut deck = Deck::new();
+    let mut count = 0;
+    for (k, v) in self.cards {
+      deck.cards.push(DeckCard { card: k, count: v });
+      count += v;
+    }
+    deck.count = count;
+    deck
+      .cards
+      .sort_unstable_by(|a, b| a.card.name.cmp(&b.card.name));
+    deck
+  }
 }
 
 #[derive(Debug)]
@@ -16,55 +62,44 @@ pub struct DeckcodeError(pub String);
 impl Deck {
   pub fn new() -> Self {
     Self {
-      cards: std::collections::BTreeMap::new(),
+      cards: Vec::with_capacity(20),
       format: GameFormat::Standard,
+      count: 0,
     }
   }
 
   pub fn from_cards(cards: Vec<Card>) -> Self {
-    let mut deck = Deck::new();
+    let mut b = DeckBuilder::new();
     for card in cards {
-      deck.insert(card);
+      b = b.insert(card);
     }
-    deck
-  }
-
-  pub fn insert(&mut self, card: Card) {
-    let total_count = self.cards.entry(card).or_insert(0);
-    *total_count += 1;
-  }
-
-  pub fn insert_count(&mut self, card: Card, count: usize) {
-    let total_count = self.cards.entry(card).or_insert(0);
-    *total_count += count;
+    b.build()
   }
 
   pub fn flatten(&self) -> Vec<&Card> {
-    let mut result = Vec::with_capacity(60);
-    for (card, count) in &self.cards {
-      for _ in 0..*count {
-        result.push(card);
+    let mut result = Vec::with_capacity(self.count);
+    for card_count in &self.cards {
+      for _ in 0..card_count.count {
+        result.push(&card_count.card);
       }
     }
     result
   }
 
   pub fn card_from_name(&self, name: &str) -> Option<&Card> {
-    let lower = name.to_lowercase();
-    for (k, _) in &self.cards {
-      if k.name.to_lowercase() == lower {
-        return Some(k);
-      }
-    }
-    None
+    let name_lowercase = name.to_lowercase();
+    let res = self
+      .cards
+      .binary_search_by(|probe| probe.card.name.to_lowercase().cmp(&name_lowercase));
+    res.map(|idx| &self.cards[idx].card).ok()
   }
 
   pub fn len(&self) -> usize {
-    self.cards.iter().fold(0, |accum, (_, count)| accum + count)
+    self.count
   }
 
   pub fn is_empty(&self) -> bool {
-    self.len() == 0
+    self.count == 0
   }
 
   pub fn from_list(list: &str) -> Result<Self, DeckcodeError> {
@@ -74,7 +109,7 @@ impl Deck {
             Regex::new(r"^\s*(?P<amount>\d+)\s+(?P<name>[^\(#\n\r]+)(?:\s*\((?P<set>\w+)\)\s+(?P<setnum>\d+))?\s*#?(?:\s*[Xx]\s*=\s*(?P<X>\d+))?(?:\s*[Tt]\s*=\s*(?P<T>\d+))?(?:\s*[Mm]\s*=\s*(?P<M>[RGWUB\d{}]+))?")
                 .expect("Failed to compile ARENA_LINE_REGEX regex");
     }
-    let mut deck = Deck::new();
+    let mut builder = DeckBuilder::new();
     for line in list.trim().lines() {
       let trimmed = line.trim();
       let trimmed_lower = trimmed.to_lowercase();
@@ -173,9 +208,9 @@ impl Deck {
         card.turn += turn_val;
       }
       card.name = name;
-      deck.cards.insert(card, amount);
+      builder = builder.insert_count(card, amount);
     }
-    Ok(deck)
+    Ok(builder.build())
   }
 }
 

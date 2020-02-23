@@ -149,10 +149,10 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
     if deck.is_empty() {
         return Err(Error::EmptyDeckcode);
     }
-    let deck_list = deck.flatten();
-    let highest_turn = deck_list
+    let highest_turn = deck
+        .cards
         .iter()
-        .fold(0, |max, c| std::cmp::max(max, c.turn as usize));
+        .fold(0, |max, c| std::cmp::max(max, c.card.turn as usize));
     let mut mulligan = London::never();
     mulligan.mulligan_down_to = input.mulligan_down_to;
     mulligan.mulligan_on_lands = input.mulligan_on_lands.clone();
@@ -176,21 +176,23 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         deck: &deck,
         on_the_play: input.on_the_play,
     });
-    let non_land_cards: HashSet<_> = deck_list.iter().filter(|c| !c.is_land()).collect();
     let mut outputs = Output::new();
     outputs.accumulated_opening_hand_size = sim.accumulated_opening_hand_size;
     outputs.accumulated_opening_hand_land_count = sim.accumulated_opening_hand_land_count;
 
-    outputs.card_observations = non_land_cards
+    outputs.card_observations = deck
+        .cards
         .iter()
-        .map(|card| {
+        .filter(|c| !c.card.is_land())
+        .map(|c| {
+            let card = &c.card;
+            let count = c.count;
             let o = sim.observations_for_card_by_turn(&card, card.turn as usize);
-            let card_count = deck_list.iter().filter(|c| c.hash == card.hash).count();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card: (**card).into(),
+                card: card.into(),
                 cmc,
-                card_count,
+                card_count: count,
                 observations: o,
             }
         })
@@ -203,16 +205,16 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .card_observations
         .sort_by(|a, b| a.card.mana_cost.cmc().cmp(&b.card.mana_cost.cmc()));
 
-    let land_cards: HashSet<_> = deck_list.iter().filter(|c| c.is_land()).collect();
-    outputs.land_counts = land_cards
+    outputs.land_counts = deck
+        .cards
         .iter()
-        .map(|card| {
-            let card_count = deck_list.iter().filter(|c| c.hash == card.hash).count();
-            let cmc = card.mana_cost.cmc();
+        .filter(|c| c.card.is_land())
+        .map(|c| {
+            let cmc = c.card.mana_cost.cmc();
             CardObservation {
-                card: (**card).into(),
+                card: (&c.card).into(),
                 cmc,
-                card_count,
+                card_count: c.count,
                 observations: Observations::new(),
             }
         })
@@ -225,29 +227,39 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .land_counts
         .sort_by(|a, b| a.card.kind.cmp(&b.card.kind));
 
+    let deck_len = deck.len();
     // Calculate the other statistics
-    outputs.deck_size = deck.cards.len();
-    outputs.deck_average_cmc = if non_land_cards.len() == 0 {
+    outputs.deck_size = deck_len;
+    outputs.deck_average_cmc = if deck_len == 0 {
         0.0
     } else {
-        non_land_cards
+        let n = deck
+            .cards
             .iter()
-            .map(|c| c.mana_cost.cmc() as usize)
+            .filter(|c| !c.card.is_land())
+            .fold(0, |accum, c| accum + c.count);
+        deck.cards
+            .iter()
+            .filter(|c| !c.card.is_land())
+            .map(|c| c.count * (c.card.mana_cost.cmc() as usize))
             .sum::<usize>() as f64
-            / non_land_cards.len() as f64
+            / n as f64
     };
 
-    for card in &deck_list {
-        if card.is_land() {
-            outputs.total_land_counts.count(&card.mana_cost);
-        }
-        match card.kind {
-            CardKind::BasicLand => outputs.basic_land_counts.count(&card.mana_cost),
-            CardKind::CheckLand => outputs.check_land_counts.count(&card.mana_cost),
-            CardKind::TapLand => outputs.tap_land_counts.count(&card.mana_cost),
-            CardKind::ShockLand => outputs.shock_land_counts.count(&card.mana_cost),
-            CardKind::OtherLand => outputs.other_land_counts.count(&card.mana_cost),
-            _ => outputs.non_land_counts.count(&card.mana_cost),
+    for c in &deck.cards {
+        for _ in 0..c.count {
+            let card = &c.card;
+            if card.is_land() {
+                outputs.total_land_counts.count(&card.mana_cost);
+            }
+            match card.kind {
+                CardKind::BasicLand => outputs.basic_land_counts.count(&card.mana_cost),
+                CardKind::CheckLand => outputs.check_land_counts.count(&card.mana_cost),
+                CardKind::TapLand => outputs.tap_land_counts.count(&card.mana_cost),
+                CardKind::ShockLand => outputs.shock_land_counts.count(&card.mana_cost),
+                CardKind::OtherLand => outputs.other_land_counts.count(&card.mana_cost),
+                _ => outputs.non_land_counts.count(&card.mana_cost),
+            }
         }
     }
     Ok(outputs)
