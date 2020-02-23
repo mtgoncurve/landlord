@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::io::prelude::*;
 
 // TODO Rethink including these in the Card definition
-use crate::scryfall::{Rarity, SetCode};
+pub use crate::scryfall::*;
 
 /// A Collection represents a deck or a library of cards
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
