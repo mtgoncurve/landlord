@@ -11,6 +11,7 @@ extern crate select;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use landlord::card::GameFormat;
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
 use std::env;
@@ -20,7 +21,7 @@ use std::io::prelude::*;
 
 macro_rules! fetch {
   ($url:expr) => {{
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(3));
     info!("Fetching {}", $url);
     reqwest::blocking::get($url)?.text()?
   }};
@@ -52,11 +53,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let mut results = Vec::new();
   for format in &formats {
     info!("Recording {} decks", format);
-    let mut format_results = Vec::with_capacity(20);
     let format_url = format!("https://www.mtggoldfish.com/metagame/{}/full#paper", format);
     let format_html_text = fetch!(&format_url);
     let format_doc = Document::from(format_html_text.as_str());
-
     let deck_url_nodes: Vec<_> = format_doc
       .find(Class("deck-price-paper").descendant(Name("a")))
       .collect();
@@ -92,16 +91,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("copy-paste-box to exist")
         .text();
-      let deck = decklist!(&deck_text);
-      assert!(!deck.cards.is_empty());
-      info!(
-        "Recording deck {} with card length {}",
-        title,
-        deck.cards.len()
-      );
-      format_results.push((title.clone(), deck_url, deck));
+      let mut deck = decklist!(&deck_text);
+      assert!(!deck.is_empty());
+      info!("Recording deck {} with card length {}", title, deck.len());
+      deck.title = Some(title.clone());
+      deck.url = Some(deck_url);
+      deck.format = GameFormat::Standard;
+      results.push(deck);
     }
-    results.push((format.clone(), format_url, format_results));
   }
   info!("Writing compressing bincode to {}", out_path_string);
   let encoded_collection = bincode::serialize(&results)?;

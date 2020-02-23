@@ -4,6 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use time::{Date, Duration};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScryfallCard {
@@ -66,7 +67,7 @@ pub enum GameFormat {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
-#[serde(rename = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Rarity {
   Common,
   Uncommon,
@@ -79,7 +80,7 @@ pub enum Rarity {
 /// Set codes
 /// See [https://mtg.gamepedia.com/Template:List_of_Magic_sets](https://mtg.gamepedia.com/Template:List_of_Magic_sets)
 /// This listing only covers core and expansion sets from ~2015
-#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum SetCode {
   ORI,
@@ -134,6 +135,39 @@ impl std::str::FromStr for SetCode {
       _ => Self::Unknown,
     };
     Ok(r)
+  }
+}
+
+impl SetCode {
+  pub fn in_standard(&self) -> bool {
+    match self {
+      Self::GRN => true,
+      Self::RNA => true,
+      Self::WAR => true,
+      Self::M20 => true,
+      Self::ELD => true,
+      Self::THB => true,
+      Self::M21 => false,
+      _ => false,
+    }
+  }
+
+  pub fn standard_rotation_date(&self) -> Date {
+    match self {
+      Self::GRN => date!(2020 - 10 - 01),
+      Self::RNA => date!(2020 - 10 - 01),
+      Self::WAR => date!(2020 - 10 - 01),
+      Self::M20 => date!(2020 - 10 - 01),
+      Self::ELD => date!(2021 - 10 - 01),
+      Self::THB => date!(2021 - 10 - 01),
+      Self::M21 => date!(2021 - 10 - 01),
+      _ => date!(2030 - 01 - 01),
+    }
+  }
+
+  pub fn time_remaining_in_standard(&self, today: Date) -> Duration {
+    let rotation = self.standard_rotation_date();
+    rotation - today
   }
 }
 

@@ -14,7 +14,10 @@ extern crate flate2;
 extern crate rand;
 extern crate regex;
 extern crate wasm_bindgen;
+#[macro_use]
+extern crate time;
 
+pub mod arena;
 #[macro_use]
 pub mod card;
 #[macro_use]
@@ -22,8 +25,8 @@ pub mod deck;
 pub mod hand;
 pub mod mana_cost;
 pub mod mulligan;
-pub mod scryfall;
 pub mod simulation;
 
 mod mtgoncurve;
+mod scryfall;
 pub use crate::mtgoncurve::run;

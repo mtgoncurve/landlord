@@ -1,11 +1,14 @@
 use crate::card::*;
 use crate::mana_cost::parse_mana_costs;
-use crate::scryfall::{GameFormat, SetCode};
+use crate::scryfall::{GameFormat, Rarity, SetCode};
 use regex::Regex;
 use std::collections::BTreeMap;
+use time::Date;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deck {
+  pub title: Option<String>,
+  pub url: Option<String>,
   pub cards: Vec<DeckCard>,
   pub format: GameFormat,
   pub card_count: usize,
@@ -62,13 +65,59 @@ pub struct DeckcodeError(pub String);
 impl Deck {
   pub fn new() -> Self {
     Self {
+      title: None,
+      url: None,
       cards: Vec::with_capacity(20),
       format: GameFormat::Standard,
       card_count: 0,
     }
   }
 
-  pub fn from_cards(cards: Vec<Card>) -> Self {
+  pub fn common_count(&self) -> usize {
+    self
+      .cards
+      .iter()
+      .filter(|cc| cc.card.rarity == Rarity::Common)
+      .fold(0, |accum, cc| accum + cc.count)
+  }
+
+  pub fn uncommon_count(&self) -> usize {
+    self
+      .cards
+      .iter()
+      .filter(|cc| cc.card.rarity == Rarity::Uncommon)
+      .fold(0, |accum, cc| accum + cc.count)
+  }
+
+  pub fn rare_count(&self) -> usize {
+    self
+      .cards
+      .iter()
+      .filter(|cc| cc.card.rarity == Rarity::Rare)
+      .fold(0, |accum, cc| accum + cc.count)
+  }
+
+  pub fn mythic_count(&self) -> usize {
+    self
+      .cards
+      .iter()
+      .filter(|cc| cc.card.rarity == Rarity::Mythic)
+      .fold(0, |accum, cc| accum + cc.count)
+  }
+
+  pub fn average_time_remaining_in_standard(&self, date: Date) -> f64 {
+    let sum = self
+      .cards
+      .iter()
+      .map(|cc| cc.card.set.time_remaining_in_standard(date))
+      .fold(0i64, |accum, dur| accum + dur.whole_days());
+    sum as f64 / self.len() as f64
+  }
+
+  pub fn from_cards<I>(cards: I) -> Self
+  where
+    I: IntoIterator<Item = Card>,
+  {
     let mut b = DeckBuilder::new();
     for card in cards {
       b = b.insert(card);
@@ -87,11 +136,15 @@ impl Deck {
   }
 
   pub fn card_from_name(&self, name: &str) -> Option<&Card> {
+    self.card_count_from_name(name).map(|o| &o.card)
+  }
+
+  pub fn card_count_from_name(&self, name: &str) -> Option<&DeckCard> {
     let name_lowercase = name.to_lowercase();
     let res = self
       .cards
       .binary_search_by(|probe| probe.card.name.to_lowercase().cmp(&name_lowercase));
-    res.map(|idx| &self.cards[idx].card).ok()
+    res.map(|idx| &self.cards[idx]).ok()
   }
 
   pub fn len(&self) -> usize {

@@ -11,6 +11,7 @@ extern crate landlord;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate time;
 
 //use landlord::card::Card;
 //use std::fs::File;
@@ -18,7 +19,7 @@ extern crate regex;
 //use std::path::Path;
 use flate2::read::GzDecoder;
 use landlord::card::Collection;
-use landlord::deck::DeckBuilder;
+use landlord::deck::{Deck, DeckBuilder};
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::env;
@@ -26,6 +27,7 @@ use std::error::Error;
 use std::fmt;
 use std::io::prelude::*;
 use std::io::BufRead;
+use time::Date;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct GetPlayerCardsV3Payload {
@@ -95,15 +97,61 @@ fn all_cards() -> Result<Collection, bincode::Error> {
     bincode::deserialize(&s)
 }
 
-/*
-fn net_decks() -> Result<Vec<(String, String, Vec<(String, String, Collection)>)>, bincode::Error> {
+fn net_decks() -> Result<Vec<Deck>, bincode::Error> {
     let b = include_bytes!("../../../data/net_decks.landlord");
     let mut gz = GzDecoder::new(&b[..]);
     let mut s: Vec<u8> = Vec::new();
     gz.read_to_end(&mut s).expect("gz decode failed");
     bincode::deserialize(&s)
 }
-*/
+
+fn correct_wrong_mtggoldfish_set_codes(deck: &mut Deck, date: Date) {
+    for cc in &mut deck.cards {
+        let mut card = &mut cc.card;
+        if card.set.in_standard() {
+            continue;
+        }
+        let current = card.set;
+        for other in &ALL_CARDS.cards {
+            if other.hash == card.hash
+                && other.set.in_standard()
+                && other.set.time_remaining_in_standard(date)
+                    > card.set.time_remaining_in_standard(date)
+            {
+                card.set = other.set;
+            }
+        }
+        debug!(
+            "Fix card \"{}\" set code from {:?} to {:?}",
+            card.name, current, card.set
+        );
+    }
+}
+
+pub fn build_deck(collection: &Deck, deck: &Deck) -> (Deck, Deck) {
+    let mut have = DeckBuilder::new();
+    let mut need = DeckBuilder::new();
+    for need_cc in &deck.cards {
+        let need_card = &need_cc.card;
+        let need_count = need_cc.count;
+
+        let have_cc = collection.card_count_from_name(&need_card.name);
+        let have_count = std::cmp::min(have_cc.map(|o| o.count).unwrap_or(0), need_count);
+        let diff_count = need_count - have_count;
+        if diff_count == 0 {
+            have = have.insert_count(need_card.clone(), need_count);
+        } else {
+            have = have.insert_count(need_card.clone(), have_count);
+            need = need.insert_count(need_card.clone(), diff_count);
+        }
+    }
+    (have.build(), need.build())
+}
+
+lazy_static! {
+    pub static ref ALL_CARDS: Collection = all_cards().expect("all_cards() failed");
+    pub static ref NET_DECKS: Vec<Deck> = net_decks().expect("net_dekcs() failed");
+}
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
@@ -136,6 +184,41 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let collection = builder.build();
-    info!("Collection: {:?}", collection);
+    //info!("Collection: {:?}", collection);
+    let today = Date::today();
+    let mut ranked = Vec::new();
+    let mut decks = net_decks()?;
+    for (i, mut deck) in decks.iter_mut().enumerate() {
+        correct_wrong_mtggoldfish_set_codes(&mut deck, today);
+        let time_left = deck.average_time_remaining_in_standard(today);
+        ranked.push((i, time_left));
+    }
+    ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    for (i, time_left) in ranked {
+        let deck = &decks[i];
+        let title = deck.title.as_ref().unwrap();
+        let url = deck.url.as_ref().unwrap();
+        info!(
+            "{} average number of days remaining in standard: {}",
+            title, time_left,
+        );
+        info!("\t{}", url);
+        info!(
+            "\tCost: mythic {} // rare {} // uncommon {} // common {}",
+            deck.mythic_count(),
+            deck.rare_count(),
+            deck.uncommon_count(),
+            deck.common_count()
+        );
+        let (_have, need) = build_deck(&collection, &deck);
+        let need_list: Vec<_> = need
+            .cards
+            .iter()
+            .map(|cc| (cc.card.name.clone(), cc.count))
+            .collect();
+        for (name, count) in need_list {
+            info!("\t Need {}x {}", count, name);
+        }
+    }
     Ok(())
 }
