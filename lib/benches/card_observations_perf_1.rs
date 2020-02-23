@@ -28,29 +28,28 @@ fn criterion_function(c: &mut Criterion) {
     4 Watery Grave
     ";
     let deck = Deck::from_list(code).expect("Bad deckcode");
-    c.bench_function_over_inputs(
-        "reddit_deck card_observations",
-        move |b, runs| {
-            let mulligan = London::never();
-            let highest_cmc = deck
-                .cards
+    let mulligan = London::never();
+    let highest_cmc = deck
+        .cards
+        .iter()
+        .fold(0, |max, cc| std::cmp::max(max, cc.card.turn as usize));
+    let sim = Simulation::from_config(&SimulationConfig {
+        run_count: 1000,
+        draw_count: highest_cmc,
+        mulligan: &mulligan,
+        deck: &deck,
+        on_the_play: false,
+    });
+    c.bench_function("reddit_deck card_observations", |b| {
+        b.iter(|| {
+            deck.cards
                 .iter()
-                .fold(0, |max, (c, _)| std::cmp::max(max, c.turn as usize));
-            let sim = Simulation::from_config(&SimulationConfig {
-                run_count: **runs,
-                draw_count: highest_cmc,
-                mulligan: &mulligan,
-                deck: &deck,
-                on_the_play: false,
-            });
-            b.iter(|| {
-                deck.cards.iter().for_each(|(c, _)| {
-                    sim.observations_for_card(&c);
+                .filter(|cc| !cc.card.is_land())
+                .for_each(|cc| {
+                    sim.observations_for_card(&cc.card);
                 });
-            })
-        },
-        &[1000],
-    );
+        })
+    });
 }
 
 criterion_group!(benches, criterion_function);

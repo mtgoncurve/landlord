@@ -94,6 +94,7 @@ fn all_cards() -> Result<Collection, bincode::Error> {
     bincode::deserialize(&s)
 }
 
+/*
 fn net_decks() -> Result<Vec<(String, String, Vec<(String, String, Collection)>)>, bincode::Error> {
     let b = include_bytes!("../../../data/net_decks.landlord");
     let mut gz = GzDecoder::new(&b[..]);
@@ -101,6 +102,7 @@ fn net_decks() -> Result<Vec<(String, String, Vec<(String, String, Collection)>)
     gz.read_to_end(&mut s).expect("gz decode failed");
     bincode::deserialize(&s)
 }
+*/
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();

@@ -52,15 +52,9 @@ impl Simulation {
   pub fn from_config<M: Mulligan>(config: &SimulationConfig<M>) -> Self {
     assert!(config.run_count > 0);
     let mut rng = SmallRng::from_entropy();
+    let deck = config.deck.flatten();
     let hands: Vec<_> = (0..config.run_count)
-      .map(|_| {
-        Hand::from_mulligan(
-          config.mulligan,
-          &mut rng,
-          &config.deck.flatten(),
-          config.draw_count,
-        )
-      })
+      .map(|_| Hand::from_mulligan(config.mulligan, &mut rng, &deck, config.draw_count))
       .collect();
     let accumulated_opening_hand_size =
       hands.iter().map(|hand| hand.opening().len()).sum::<usize>();

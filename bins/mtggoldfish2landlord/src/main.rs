@@ -11,7 +11,6 @@ extern crate select;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use landlord::card::*;
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
 use std::env;
