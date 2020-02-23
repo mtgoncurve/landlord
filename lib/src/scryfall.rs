@@ -26,6 +26,10 @@ pub struct ScryfallCard {
   pub arena_id: u64,
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub card_faces: Vec<ScryfallCard>,
+  #[serde(default)]
+  pub set: SetCode,
+  #[serde(default)]
+  pub rarity: Rarity,
   // NOTE(jshrake): SCRYFALL_JSON_URL only contains cards with a unique
   // oracle_id, else we would use this value to ensure unique cards
   //pub oracle_id: String,
@@ -52,11 +56,97 @@ pub enum Legality {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Hash)]
+#[serde(rename = "lowercase")]
 pub enum GameFormat {
-  #[serde(rename = "standard")]
   Standard,
+  Modern,
+  Legacy,
   #[serde(other)]
   Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
+#[serde(rename = "lowercase")]
+pub enum Rarity {
+  Common,
+  Uncommon,
+  Rare,
+  Mythic,
+  #[serde(other)]
+  Unknown,
+}
+
+/// Set codes
+/// See [https://mtg.gamepedia.com/Template:List_of_Magic_sets](https://mtg.gamepedia.com/Template:List_of_Magic_sets)
+/// This listing only covers core and expansion sets from ~2015
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum SetCode {
+  ORI,
+  BFZ,
+  OGW,
+  SOI,
+  EMN,
+  KLD,
+  AER,
+  AKH,
+  HOU,
+  XLN,
+  RIX,
+  DOM,
+  M19,
+  GRN,
+  RNA,
+  WAR,
+  M20,
+  ELD,
+  THB,
+  M21,
+  #[serde(other)]
+  Unknown,
+}
+
+impl std::str::FromStr for SetCode {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, ()> {
+    let r = match s {
+      "ORI" => Self::ORI,
+      "BFZ" => Self::BFZ,
+      "OGW" => Self::OGW,
+      "SOI" => Self::SOI,
+      "EMN" => Self::EMN,
+      "KLD" => Self::KLD,
+      "AER" => Self::AER,
+      "AKH" => Self::AKH,
+      "HOU" => Self::HOU,
+      "XLN" => Self::XLN,
+      "RIX" => Self::RIX,
+      "DOM" => Self::DOM,
+      "M19" => Self::M19,
+      "GRN" => Self::GRN,
+      "RNA" => Self::RNA,
+      "WAR" => Self::WAR,
+      "M20" => Self::M20,
+      "ELD" => Self::ELD,
+      "THB" => Self::THB,
+      "M21" => Self::M21,
+      _ => Self::Unknown,
+    };
+    Ok(r)
+  }
+}
+
+impl Default for SetCode {
+  fn default() -> Self {
+    Self::Unknown
+  }
+}
+
+impl Default for Rarity {
+  fn default() -> Self {
+    Self::Unknown
+  }
 }
 
 // We use Scryfall's color_identity attribute to determine the color sources
@@ -212,7 +302,10 @@ impl Into<Card> for ScryfallCard {
     let mut s = DefaultHasher::new();
     name.hash(&mut s);
     let hash = s.finish();
-
+    let standard_legal = self
+      .legalities
+      .get(&GameFormat::Standard)
+      .map_or(false, |f| f == &Legality::Legal);
     Card {
       name,
       hash,
@@ -223,6 +316,9 @@ impl Into<Card> for ScryfallCard {
       mana_cost,
       all_mana_costs,
       arena_id: self.arena_id,
+      set: self.set,
+      rarity: self.rarity,
+      standard_legal,
     }
   }
 }

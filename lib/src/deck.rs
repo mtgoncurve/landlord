@@ -1,6 +1,6 @@
 use crate::card::*;
 use crate::mana_cost::parse_mana_costs;
-use crate::scryfall::GameFormat;
+use crate::scryfall::{GameFormat, SetCode};
 use regex::Regex;
 use std::collections::BTreeMap;
 
@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 pub struct Deck {
   pub cards: Vec<DeckCard>,
   pub format: GameFormat,
-  pub count: usize,
+  pub card_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,7 +48,7 @@ impl DeckBuilder {
       deck.cards.push(DeckCard { card: k, count: v });
       count += v;
     }
-    deck.count = count;
+    deck.card_count = count;
     deck
       .cards
       .sort_unstable_by(|a, b| a.card.name.cmp(&b.card.name));
@@ -64,7 +64,7 @@ impl Deck {
     Self {
       cards: Vec::with_capacity(20),
       format: GameFormat::Standard,
-      count: 0,
+      card_count: 0,
     }
   }
 
@@ -77,7 +77,7 @@ impl Deck {
   }
 
   pub fn flatten(&self) -> Vec<&Card> {
-    let mut result = Vec::with_capacity(self.count);
+    let mut result = Vec::with_capacity(self.card_count);
     for card_count in &self.cards {
       for _ in 0..card_count.count {
         result.push(&card_count.card);
@@ -95,11 +95,11 @@ impl Deck {
   }
 
   pub fn len(&self) -> usize {
-    self.count
+    self.card_count
   }
 
   pub fn is_empty(&self) -> bool {
-    self.count == 0
+    self.len() == 0
   }
 
   pub fn from_list(list: &str) -> Result<Self, DeckcodeError> {
@@ -144,6 +144,9 @@ impl Deck {
         )))
       })?;
       let name = caps["name"].trim().to_string();
+      let set = caps["set"]
+        .parse::<SetCode>()
+        .expect("parse to SetCode can't fail");
       // By default, we represent split cards with the left face
       let left_card_name = name
         .split("//")
@@ -156,11 +159,11 @@ impl Deck {
         })?
         .trim()
         .to_string();
-      let card = ALL_CARDS.card_from_name(&left_card_name).ok_or_else(|| {
-        DeckcodeError(format!("Cannot find card named \"{}\" in collection", name))
-      })?;
-      // Clone the card as mutable so we can apply modifiers
-      let mut card = card.clone();
+      // Find the card from the name, and clone it so we can apply card modifiers
+      let mut card = ALL_CARDS
+        .card_from_name(&left_card_name)
+        .ok_or_else(|| DeckcodeError(format!("Cannot find card named \"{}\" in collection", name)))?
+        .clone();
       // Handle the X = modifier
       if let Some(x_val) = caps.name("X") {
         // Only modify the colorless mana cost if the mana cost string contains an X value
@@ -208,6 +211,7 @@ impl Deck {
         card.turn += turn_val;
       }
       card.name = name;
+      card.set = set;
       builder = builder.insert_count(card, amount);
     }
     Ok(builder.build())

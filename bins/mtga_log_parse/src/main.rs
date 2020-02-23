@@ -18,6 +18,7 @@ extern crate regex;
 //use std::path::Path;
 use flate2::read::GzDecoder;
 use landlord::card::Collection;
+use landlord::deck::DeckBuilder;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::env;
@@ -29,7 +30,7 @@ use std::io::BufRead;
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct GetPlayerCardsV3Payload {
     id: u64,
-    payload: BTreeMap<String, u8>,
+    payload: BTreeMap<String, usize>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -120,12 +121,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_string = std::fs::read_to_string(log_path.as_path())?;
     let log = Log::from_str(&log_string)?;
     let all_cards = all_cards()?.sort_by_arena_id();
-    let mut result = BTreeMap::new();
+    let mut builder = DeckBuilder::new();
     if let Some(collection) = log.collection {
         for (arena_id_str, count) in collection.payload {
             let arena_id = arena_id_str.parse::<u64>().expect("parse to u64 works");
             if let Some(card) = all_cards.card_from_arena_id(arena_id) {
-                result.insert(card.hash, count);
+                builder = builder.insert_count(card.clone(), count);
             } else {
                 warn!(
                     "Cannot find https://api.scryfall.com/cards/arena/{}",
@@ -134,6 +135,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    info!("Collection: {:?}", result);
+    let collection = builder.build();
+    info!("Collection: {:?}", collection);
     Ok(())
 }

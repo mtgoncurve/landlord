@@ -5,6 +5,9 @@ use flate2::read::GzDecoder;
 use std::hash::{Hash, Hasher};
 use std::io::prelude::*;
 
+// TODO Rethink including these in the Card definition
+use crate::scryfall::{Rarity, SetCode};
+
 /// A Collection represents a deck or a library of cards
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Collection {
@@ -49,6 +52,12 @@ pub struct Card {
     pub all_mana_costs: Vec<ManaCost>,
     /// Arena id
     pub arena_id: u64,
+    /// Card rarity
+    pub rarity: Rarity,
+    /// Card release set code
+    pub set: SetCode,
+    /// True if the card is legal in standard
+    pub standard_legal: bool,
 }
 
 impl Card {
