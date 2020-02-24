@@ -38,27 +38,22 @@ struct CardSetKey {
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
   env_logger::init();
   let _args: Vec<String> = env::args().collect();
-  let _data_path: std::path::PathBuf = [
-    "C:",
-    "LocalLow",
+  let data_path: std::path::PathBuf = [
+    "/mnt",
+    "c",
+    "Program Files (x86)",
     "Wizards of The Coast",
     "MTGA",
-    "data_loc.json",
+    "MTGA_Data",
+    "Downloads",
+    "Data",
   ]
   .iter()
   .collect();
-  let data_loc_path: std::path::PathBuf = [
-    "arena_data",
-    "data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga",
-  ]
-  .iter()
-  .collect();
-  let data_card_path: std::path::PathBuf = [
-    "arena_data",
-    "data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga",
-  ]
-  .iter()
-  .collect();
+  let data_loc_path: std::path::PathBuf =
+    data_path.join("data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga");
+  let data_card_path: std::path::PathBuf =
+    data_path.join("data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga");
   let data_loc_string = std::fs::read_to_string(data_loc_path.as_path())?;
   let data_locs: Vec<DataLoc> = serde_json::from_str(&data_loc_string)?;
   let data_card_string = std::fs::read_to_string(data_card_path.as_path())?;
@@ -75,15 +70,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     m
   };
   let all_cards = all_cards()?;
-  let card_lookup = {
-    let mut m = HashMap::new();
-    for card in &all_cards.cards {
-      let card_name_lower = card.name.to_lowercase();
-      let cards = m.entry(card_name_lower).or_insert(Vec::new());
-      cards.push(card.clone());
-    }
-    m
-  };
+  let card_lookup = all_cards.group_by_name();
   let mut results = HashMap::new();
   for data_card in &data_cards {
     let titleid = data_card.titleid;
@@ -91,7 +78,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let title_lower = title.to_lowercase();
     let arena_id = data_card.grpid;
     let arena_set_string = data_card.set.to_uppercase();
-    let arena_set = arena_set_string.parse::<SetCode>().expect("ok");
+    let arena_set = arena_set_string.parse::<SetCode>().unwrap();
     let scryfall_oracle_id = {
       if let Some(cards) = card_lookup.get(&title_lower) {
         let mut oracle_id = None;
@@ -108,16 +95,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     if scryfall_oracle_id.is_none() {
       warn!(
-        "Could not resolve scryfall oracle id for card/set/arena id: {} {} {}",
-        title, arena_set_string, arena_id
+        "Could not resolve scryfall oracle id for card/set/arena id: {} {:?} {}",
+        title, arena_set, arena_id
       );
     }
-    results.insert(arena_id, scryfall_oracle_id);
+    results.insert(arena_id, (scryfall_oracle_id, title_lower));
   }
   let nullkey = String::from("null");
   let results_rev: HashMap<String, u64> = results
     .iter()
-    .map(|(k, v)| (v.as_ref().unwrap_or(&nullkey).clone(), *k))
+    .map(|(k, v)| (v.0.as_ref().unwrap_or(&nullkey).clone(), *k))
     .collect();
   serde_json::to_writer(
     &std::fs::File::create("data/arena2scryfall.json")?,
@@ -127,5 +114,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     &std::fs::File::create("data/scryfall2arena.json")?,
     &results_rev,
   )?;
+  info!("Resolved {}/{} cards", results_rev.len(), results.len());
   Ok(())
 }

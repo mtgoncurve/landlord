@@ -32,13 +32,15 @@ impl DeckBuilder {
     }
   }
 
-  pub fn insert(mut self, card: Card) -> Self {
+  pub fn insert(mut self, mut card: Card) -> Self {
+    card.name = card.name.to_lowercase();
     let total_count = self.cards.entry(card).or_insert(0);
     *total_count += 1;
     Self { cards: self.cards }
   }
 
-  pub fn insert_count(mut self, card: Card, count: usize) -> Self {
+  pub fn insert_count(mut self, mut card: Card, count: usize) -> Self {
+    card.name = card.name.to_lowercase();
     let total_count = self.cards.entry(card).or_insert(0);
     *total_count += count;
     Self { cards: self.cards }
@@ -109,9 +111,15 @@ impl Deck {
     let sum = self
       .cards
       .iter()
-      .map(|cc| cc.card.set.time_remaining_in_standard(date))
-      .fold(0i64, |accum, dur| accum + dur.whole_days());
-    sum as f64 / self.len() as f64
+      .filter(|cc| cc.card.kind != CardKind::BasicLand)
+      .map(|cc| cc.count as i64 * cc.card.set.time_remaining_in_standard(date).whole_days())
+      .fold(0i64, |accum, dur| accum + dur);
+    let non_basic_land_count = self
+      .cards
+      .iter()
+      .filter(|cc| cc.card.kind != CardKind::BasicLand)
+      .fold(0, |accum, cc| accum + cc.count);
+    sum as f64 / non_basic_land_count as f64
   }
 
   pub fn from_cards<I>(cards: I) -> Self
@@ -143,7 +151,7 @@ impl Deck {
     let name_lowercase = name.to_lowercase();
     let res = self
       .cards
-      .binary_search_by(|probe| probe.card.name.to_lowercase().cmp(&name_lowercase));
+      .binary_search_by(|probe| probe.card.name.cmp(&name_lowercase));
     res.map(|idx| &self.cards[idx]).ok()
   }
 

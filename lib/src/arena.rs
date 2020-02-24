@@ -1,5 +1,6 @@
 //! # Structures related to the downloaded game files and the log
 //!
+//!
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum IsoCode {
     #[serde(rename = "en-US")]
