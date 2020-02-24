@@ -197,9 +197,14 @@ impl Deck {
         )))
       })?;
       let name = caps["name"].trim().to_string();
-      let set = caps["set"]
-        .parse::<SetCode>()
-        .expect("parse to SetCode can't fail");
+      let set = if let Some(set) = caps.name("set") {
+        set
+          .as_str()
+          .parse::<SetCode>()
+          .expect("parse::<SetCode>() cannot fail")
+      } else {
+        SetCode::Unknown
+      };
       // By default, we represent split cards with the left face
       let left_card_name = name
         .split("//")
