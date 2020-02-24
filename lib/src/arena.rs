@@ -1,7 +1,6 @@
 //! # Structures related to the downloaded game files and the log
 //!
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum IsoCode {
     #[serde(rename = "en-US")]
     EnUS,
@@ -24,6 +23,8 @@ pub struct DataKey {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DataCard {
-    grpid: u64,
-    titleid: u64,
+    pub grpid: u64,
+    #[serde(rename = "titleId")]
+    pub titleid: u64,
+    pub set: String,
 }
