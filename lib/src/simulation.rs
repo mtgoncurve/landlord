@@ -600,7 +600,7 @@ mod tests {
       ";
     let deck = decklist!(code);
     let card = card!("Agonizing Remorse");
-    assert_eq!(card.kind.is_land(), false);
+    assert_eq!(card.is_land(), false);
     let runs = 100;
     let draws = 10;
     let sim = Simulation::from_config(&SimulationConfig {
@@ -639,7 +639,7 @@ mod tests {
       ";
     let deck = decklist!(code);
     let card = card!("Syr Gwyn, Hero of Ashvale");
-    assert_eq!(card.kind.is_land(), false);
+    assert_eq!(card.is_land(), false);
     let runs = 100;
     let draws = 10;
     let sim = Simulation::from_config(&SimulationConfig {

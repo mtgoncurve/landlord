@@ -70,6 +70,8 @@ fn main() -> Result<(), Error> {
             if face.image_uris.is_empty() {
                 face.image_uris = card.image_uris.clone();
             }
+            face.set = card.set;
+            face.oracle_id = card.oracle_id.clone();
             card_faces.push(face);
         }
     }

@@ -36,6 +36,8 @@ impl Default for CollectionSort {
 pub struct Card {
     /// String representing the card name
     pub name: String,
+    /// Scryfall oracle id
+    pub oracle_id: String,
     /// String representing the card mana cost, in "{X}{R}{R}" style format
     pub mana_cost_string: String,
     /// A URI to an image of the card
