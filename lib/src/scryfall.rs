@@ -85,6 +85,10 @@ pub enum Rarity {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum SetCode {
+  // DAR is MTGAA's code for DOM
+  // https://www.reddit.com/r/MagicArena/comments/8f72hf/mtga_calls_dominara_dar_instead_of_dom_why/
+  // TODO: consider making a separate arena set code
+  DAR,
   ORI,
   BFZ,
   OGW,
@@ -114,6 +118,10 @@ impl std::str::FromStr for SetCode {
 
   fn from_str(s: &str) -> Result<Self, ()> {
     let r = match s {
+      // DAR is MTGAA's code for DOM
+      // https://www.reddit.com/r/MagicArena/comments/8f72hf/mtga_calls_dominara_dar_instead_of_dom_why/
+      // TODO: consider making a separate arena set code
+      "DAR" => Self::DOM,
       "ORI" => Self::ORI,
       "BFZ" => Self::BFZ,
       "OGW" => Self::OGW,

@@ -2,6 +2,7 @@
 //!
 use crate::mana_cost::*;
 use flate2::read::GzDecoder;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::prelude::*;
 
@@ -156,6 +157,41 @@ impl Collection {
         let mut s: Vec<u8> = Vec::new();
         gz.read_to_end(&mut s).expect("gz decode failed");
         bincode::deserialize(&s)
+    }
+
+    pub fn group_by_name<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
+        let mut m = HashMap::new();
+        for card in &self.cards {
+            let cards = m.entry(&card.name).or_insert(Vec::new());
+            cards.push(card);
+        }
+        m
+    }
+
+    pub fn group_by_oracle_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
+        let mut m = HashMap::new();
+        for card in &self.cards {
+            m.insert(&card.oracle_id, card);
+        }
+        m
+    }
+
+    pub fn group_by_set<'a>(&'a self) -> HashMap<SetCode, Vec<&'a Card>> {
+        let mut m = HashMap::new();
+        for card in &self.cards {
+            let cards = m.entry(card.set).or_insert(Vec::new());
+            cards.push(card);
+        }
+        m
+    }
+
+    pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, Vec<&'a Card>> {
+        let mut m = HashMap::new();
+        for card in &self.cards {
+            let cards = m.entry(card.arena_id).or_insert(Vec::new());
+            cards.push(card);
+        }
+        m
     }
 
     /// Returns a new collection of cards

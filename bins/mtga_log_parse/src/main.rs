@@ -18,10 +18,11 @@ extern crate time;
 //use std::fs::OpenOptions;
 //use std::path::Path;
 use flate2::read::GzDecoder;
-use landlord::card::Collection;
+use landlord::card::{Card, Collection};
 use landlord::deck::{Deck, DeckBuilder};
 use regex::Regex;
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fmt;
@@ -105,6 +106,11 @@ fn net_decks() -> Result<Vec<Deck>, bincode::Error> {
     bincode::deserialize(&s)
 }
 
+fn arena2scryfall() -> HashMap<u64, (Option<String>, String)> {
+    let s = include_str!("../../../data/arena2scryfall.json");
+    serde_json::from_str(s).expect("arena2scryfall.json deserialize always works")
+}
+
 fn correct_wrong_mtggoldfish_set_codes(deck: &mut Deck, date: Date) {
     for cc in &mut deck.cards {
         let mut card = &mut cc.card;
@@ -134,8 +140,8 @@ pub fn build_deck(collection: &Deck, deck: &Deck) -> (Deck, Deck) {
     for need_cc in &deck.cards {
         let need_card = &need_cc.card;
         let need_count = need_cc.count;
-
-        let have_cc = collection.card_count_from_name(&need_card.name);
+        let need_name = &need_card.name;
+        let have_cc = collection.card_count_from_name(need_name);
         let have_count = std::cmp::min(have_cc.map(|o| o.count).unwrap_or(0), need_count);
         let diff_count = need_count - have_count;
         if diff_count == 0 {
@@ -150,7 +156,7 @@ pub fn build_deck(collection: &Deck, deck: &Deck) -> (Deck, Deck) {
 
 lazy_static! {
     pub static ref ALL_CARDS: Collection = all_cards().expect("all_cards() failed");
-    pub static ref NET_DECKS: Vec<Deck> = net_decks().expect("net_dekcs() failed");
+    pub static ref NET_DECKS: Vec<Deck> = net_decks().expect("net_decks() failed");
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -169,12 +175,29 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_string = std::fs::read_to_string(log_path.as_path())?;
     let log = Log::from_str(&log_string)?;
     let all_cards = all_cards()?.sort_by_arena_id();
+    let oracle_id_lookup = all_cards.group_by_oracle_id();
+    let name_lookup = all_cards.group_by_name();
+    let arena_2_oracle_id = arena2scryfall();
+
     let mut builder = DeckBuilder::new();
+
     if let Some(collection) = log.collection {
         for (arena_id_str, count) in collection.payload {
             let arena_id = arena_id_str.parse::<u64>().expect("parse to u64 works");
-            if let Some(card) = all_cards.card_from_arena_id(arena_id) {
-                builder = builder.insert_count(card.clone(), count);
+
+            if let Some(p) = arena_2_oracle_id.get(&arena_id) {
+                let name = &p.1;
+                if let Some(oracle_id) = &p.0 {
+                    let mut card = Card::clone(oracle_id_lookup.get(oracle_id).expect("ok"));
+                    if &card.name != name {
+                        card = Card::clone(name_lookup.get(name).expect("ok").first().expect("ok"));
+                    }
+                    //let split: Vec<_> = card.name.split("//").collect();
+                    //card.name = split.first().expect("ok").trim().to_string();
+                    builder = builder.insert_count(card, count);
+                } else {
+                    warn!("No oracle id for {}", arena_id);
+                }
             } else {
                 warn!(
                     "Cannot find https://api.scryfall.com/cards/arena/{}",
@@ -184,7 +207,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let collection = builder.build();
-    //info!("Collection: {:?}", collection);
+    println!("{:?}", collection);
     let today = Date::today();
     let mut ranked = Vec::new();
     let mut decks = net_decks()?;
@@ -193,31 +216,42 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         let time_left = deck.average_time_remaining_in_standard(today);
         ranked.push((i, time_left));
     }
-    ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    ranked.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
     for (i, time_left) in ranked {
         let deck = &decks[i];
         let title = deck.title.as_ref().unwrap();
         let url = deck.url.as_ref().unwrap();
+        let (_have, need) = build_deck(&collection, &deck);
         info!(
             "{} average number of days remaining in standard: {}",
             title, time_left,
         );
         info!("\t{}", url);
         info!(
-            "\tCost: mythic {} // rare {} // uncommon {} // common {}",
+            "\tPrice: mythic {} // rare {} // uncommon {} // common {}",
             deck.mythic_count(),
             deck.rare_count(),
             deck.uncommon_count(),
             deck.common_count()
         );
-        let (_have, need) = build_deck(&collection, &deck);
-        let need_list: Vec<_> = need
-            .cards
-            .iter()
-            .map(|cc| (cc.card.name.clone(), cc.count))
-            .collect();
-        for (name, count) in need_list {
-            info!("\t Need {}x {}", count, name);
+        info!(
+            "\tCost:  mythic {} // rare {} // uncommon {} // common {}",
+            need.mythic_count(),
+            need.rare_count(),
+            need.uncommon_count(),
+            need.common_count()
+        );
+        info!(
+            "\tNeeded: average number of days remaining in standard: {}",
+            need.average_time_remaining_in_standard(today)
+        );
+        for cc in &need.cards {
+            info!(
+                "\tNeed {}x {} ({:?} days left)",
+                cc.count,
+                cc.card.name,
+                cc.card.set.time_remaining_in_standard(today).whole_days()
+            );
         }
     }
     Ok(())
