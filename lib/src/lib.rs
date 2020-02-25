@@ -26,10 +26,11 @@ pub mod deck;
 pub mod collection;
 pub mod data;
 pub mod hand;
-pub mod mana_cost;
 pub mod mulligan;
+pub mod prelude;
 pub mod simulation;
 
+mod mana_cost;
 mod mtgoncurve;
 mod scryfall;
 pub use crate::mtgoncurve::run;

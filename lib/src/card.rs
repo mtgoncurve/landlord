@@ -1,6 +1,6 @@
 //! # Internal card representation
 //!
-use crate::mana_cost::*;
+pub use crate::mana_cost::*;
 pub use crate::scryfall::*;
 use std::hash::{Hash, Hasher};
 
@@ -68,15 +68,17 @@ impl Card {
     }
 
     /// Returns the converted mana cost of the card
-    #[inline]
     pub fn cmc(&self) -> u8 {
         self.mana_cost.cmc()
     }
 
     /// Returns true if the card type is a land
-    #[inline]
     pub fn is_land(&self) -> bool {
         self.kind.is_land()
+    }
+
+    pub fn in_standard(&self) -> bool {
+        self.set.in_standard()
     }
 }
 

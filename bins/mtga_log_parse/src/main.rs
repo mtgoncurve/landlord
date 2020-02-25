@@ -11,30 +11,7 @@ use landlord::deck::{Deck, DeckBuilder};
 use std::collections::HashMap;
 #[cfg(not(target_os = "macos"))]
 use std::env;
-use time::{Date, OffsetDateTime};
-
-fn correct_wrong_mtggoldfish_set_codes(deck: &mut Deck, date: Date) {
-    for cc in &mut deck.cards {
-        let mut card = &mut cc.card;
-        if card.set.in_standard() {
-            continue;
-        }
-        let current = card.set;
-        for other in &ALL_CARDS.cards {
-            if other.hash == card.hash
-                && other.set.in_standard()
-                && other.set.time_remaining_in_standard(date)
-                    > card.set.time_remaining_in_standard(date)
-            {
-                card.set = other.set;
-            }
-        }
-        debug!(
-            "Fix card \"{}\" set code from {:?} to {:?}",
-            card.name, current, card.set
-        );
-    }
-}
+use time::OffsetDateTime;
 
 pub fn build_deck(collection: &Deck, deck: &Deck) -> (Deck, Deck) {
     let mut have = DeckBuilder::new();
@@ -131,8 +108,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut decks = net_decks()?;
     {
         let mut ranked = Vec::new();
-        for (i, mut deck) in decks.iter_mut().enumerate() {
-            correct_wrong_mtggoldfish_set_codes(&mut deck, today);
+        for (i, deck) in decks.iter_mut().enumerate() {
             let time_left = deck.average_time_remaining_in_standard(today);
             ranked.push((i, time_left));
         }
