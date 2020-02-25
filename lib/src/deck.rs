@@ -788,4 +788,11 @@ mod tests {
     let deck = decklist!(code);
     assert_eq!(deck.len(), 60);
   }
+
+  #[test]
+  fn empty_code() {
+    let code = "";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 0);
+  }
 }
