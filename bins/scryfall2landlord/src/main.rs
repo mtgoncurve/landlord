@@ -68,11 +68,13 @@ fn main() -> Result<(), Error> {
     for card in &scryfall_cards {
         for face in &card.card_faces {
             let mut face = face.clone();
+            // Copy various attributes from the parent card to the face
             if face.image_uris.is_empty() {
                 face.image_uris = card.image_uris.clone();
             }
             face.set = card.set;
             face.oracle_id = card.oracle_id.clone();
+            face.id = card.id.clone();
             card_faces.push(face);
         }
     }

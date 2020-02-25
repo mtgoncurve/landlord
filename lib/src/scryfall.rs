@@ -35,6 +35,7 @@ pub struct ScryfallCard {
   pub set: SetCode,
   #[serde(default)]
   pub rarity: Rarity,
+  pub object: Object,
   // NOTE(jshrake): SCRYFALL_JSON_URL only contains cards with a unique
   // oracle_id, else we would use this value to ensure unique cards
   //pub oracle_id: String,
@@ -56,6 +57,16 @@ pub enum Legality {
   Banned,
   #[serde(rename = "restricted")]
   Restricted,
+  #[serde(other)]
+  Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq)]
+pub enum Object {
+  #[serde(rename = "card")]
+  Card,
+  #[serde(rename = "card_face")]
+  CardFace,
   #[serde(other)]
   Other,
 }
@@ -362,6 +373,7 @@ impl Into<Card> for ScryfallCard {
       arena_id: self.arena_id,
       set: self.set,
       rarity: self.rarity,
+      is_face: self.object == Object::CardFace,
     }
   }
 }

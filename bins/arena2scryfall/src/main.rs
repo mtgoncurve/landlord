@@ -89,26 +89,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
   for data_card in &data_cards {
     let arena_id = data_card.grpid;
     let titleid = data_card.titleid;
+    let collector_number = &data_card.collector_number;
     let title = string_lookup.get(&titleid).expect("ok");
     let title_lower = title.to_lowercase();
     let arena_set_string = data_card.set.to_uppercase();
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
-    // Ignore uncraftable cards
-    if !data_card.is_craftable {
-      debug!(
-        "Skipping uncraftable {} {} ({})",
-        title, arena_set_string, arena_id
-      );
-      continue;
-    }
     let cards = scryfall_names.get(&title_lower);
     // Does the title lookup fail?
-    if cards.is_none() {
-      warn!("Could not find card in scryfall data by name \"{}\"", title);
-      continue;
-    }
-    let cards = cards.unwrap();
     let find_card_idx = || {
+      if cards.is_none() {
+        return None;
+      }
+      let cards = cards.unwrap();
       // Check if one of the cards has a matching arena id
       // if so, that's our card
       for (i, card) in cards.iter().enumerate() {
@@ -116,8 +108,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
           return Some(i);
         }
       }
+      // Check if one of the cards has a matching arena set
       for (i, card) in cards.iter().enumerate() {
-        if card.set == arena_set {
+        if card.set == arena_set && card.arena_id == 0 {
           return Some(i);
         }
       }
@@ -126,13 +119,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let card_idx = find_card_idx();
     if card_idx.is_none() {
       warn!(
-        "Could not resolve scryfall id for card/set/arena id: {} {:?} {}",
-        title, arena_set, arena_id
+        "Could not find scryfall data for card name \"{}\", set {}, collectors number {}",
+        title, arena_set_string, collector_number
       );
+      warn!("\thttps://api.scryfall.com/cards/arena/{}", arena_id);
       continue;
     }
-    let card_idx = card_idx.unwrap();
-    let found_card = cards[card_idx];
+    let found_card = cards.unwrap()[card_idx.unwrap()];
     results.insert(arena_id, (found_card.id.clone(), title_lower));
   }
   let results_rev: HashMap<String, u64> = results.iter().map(|(k, v)| (v.0.clone(), *k)).collect();

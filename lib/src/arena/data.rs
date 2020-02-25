@@ -32,4 +32,6 @@ pub struct DataCard {
   pub is_collectible: bool,
   #[serde(rename = "isCraftable")]
   pub is_craftable: bool,
+  #[serde(rename = "CollectorNumber")]
+  pub collector_number: String,
 }

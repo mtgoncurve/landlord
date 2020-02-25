@@ -36,6 +36,10 @@ impl Collection {
   pub fn group_by_oracle_id<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
     let mut m = HashMap::new();
     for card in &self.cards {
+      // Ignore card faces, which duplicate the oracle id of the parent card object
+      if card.is_face {
+        continue;
+      }
       let cards = m.entry(&card.oracle_id).or_insert(Vec::new());
       cards.push(card);
     }
@@ -45,6 +49,10 @@ impl Collection {
   pub fn group_by_set<'a>(&'a self) -> HashMap<SetCode, Vec<&'a Card>> {
     let mut m = HashMap::new();
     for card in &self.cards {
+      // Ignore card faces, which duplicate the set of the parent card object
+      if card.is_face {
+        continue;
+      }
       let cards = m.entry(card.set).or_insert(Vec::new());
       cards.push(card);
     }
@@ -54,10 +62,10 @@ impl Collection {
   pub fn group_by_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
     let mut m = HashMap::new();
     for card in &self.cards {
-      if card.id.is_empty() {
+      // Ignore card faces, which duplicate the id of the parent card object
+      if card.is_face {
         continue;
       }
-      assert!(!m.contains_key(&card.id));
       m.insert(&card.id, card);
     }
     m
@@ -66,7 +74,6 @@ impl Collection {
   pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, &'a Card> {
     let mut m = HashMap::new();
     for card in &self.cards {
-      assert!(!m.contains_key(&card.arena_id));
       m.insert(card.arena_id, card);
     }
     m
