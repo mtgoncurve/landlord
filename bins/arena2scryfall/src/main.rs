@@ -35,10 +35,15 @@ struct CardSetKey {
   pub set: SetCode,
 }
 
-pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-  env_logger::init();
-  let _args: Vec<String> = env::args().collect();
-  let data_path: std::path::PathBuf = [
+#[cfg(target_os = "macos")]
+fn data_dir() -> std::path::PathBuf {
+  ["arena-data"].iter().collect()
+}
+
+#[cfg(target_os = "linux")]
+fn data_dir() -> std::path::PathBuf {
+  let app_data = env::var("APP_DATA").expect("$APP_DATA should be set");
+  [
     "/mnt",
     "c",
     "Program Files (x86)",
@@ -49,11 +54,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     "Data",
   ]
   .iter()
-  .collect();
+  .collect()
+}
+
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
+  env_logger::init();
+  let _args: Vec<String> = env::args().collect();
   let data_loc_path: std::path::PathBuf =
-    data_path.join("data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga");
+    data_dir().join("data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga");
   let data_card_path: std::path::PathBuf =
-    data_path.join("data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga");
+    data_dir().join("data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga");
   let data_loc_string = std::fs::read_to_string(data_loc_path.as_path())?;
   let data_locs: Vec<DataLoc> = serde_json::from_str(&data_loc_string)?;
   let data_card_string = std::fs::read_to_string(data_card_path.as_path())?;
@@ -79,27 +89,37 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arena_id = data_card.grpid;
     let arena_set_string = data_card.set.to_uppercase();
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
-    let scryfall_oracle_id = {
+    let scryfall_id = {
       if let Some(cards) = card_lookup.get(&title_lower) {
-        let mut oracle_id = None;
+        let mut id = None;
+        let mut check_by_set = true;
         for card in cards {
-          if card.set == arena_set {
-            oracle_id = Some(card.oracle_id.clone());
+          if card.arena_id == arena_id {
+            id = Some(card.id.clone());
+            check_by_set = false;
             break;
           }
         }
-        oracle_id
+        if check_by_set {
+          for card in cards {
+            if card.set == arena_set {
+              id = Some(card.id.clone());
+              break;
+            }
+          }
+        }
+        id
       } else {
         None
       }
     };
-    if scryfall_oracle_id.is_none() {
+    if scryfall_id.is_none() {
       warn!(
         "Could not resolve scryfall oracle id for card/set/arena id: {} {:?} {}",
         title, arena_set, arena_id
       );
     }
-    results.insert(arena_id, (scryfall_oracle_id, title_lower));
+    results.insert(arena_id, (scryfall_id, title_lower));
   }
   let nullkey = String::from("null");
   let results_rev: HashMap<String, u64> = results

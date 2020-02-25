@@ -37,6 +37,8 @@ impl Default for CollectionSort {
 pub struct Card {
     /// String representing the card name
     pub name: String,
+    /// Scryfall id
+    pub id: String,
     /// Scryfall oracle id
     pub oracle_id: String,
     /// String representing the card mana cost, in "{X}{R}{R}" style format
@@ -168,10 +170,11 @@ impl Collection {
         m
     }
 
-    pub fn group_by_oracle_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
+    pub fn group_by_oracle_id<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
         let mut m = HashMap::new();
         for card in &self.cards {
-            m.insert(&card.oracle_id, card);
+            let cards = m.entry(&card.oracle_id).or_insert(Vec::new());
+            cards.push(card);
         }
         m
     }
@@ -185,11 +188,23 @@ impl Collection {
         m
     }
 
-    pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, Vec<&'a Card>> {
+    pub fn group_by_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
         let mut m = HashMap::new();
         for card in &self.cards {
-            let cards = m.entry(card.arena_id).or_insert(Vec::new());
-            cards.push(card);
+            if card.id.is_empty() {
+                continue;
+            }
+            assert!(!m.contains_key(&card.id));
+            m.insert(&card.id, card);
+        }
+        m
+    }
+
+    pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, &'a Card> {
+        let mut m = HashMap::new();
+        for card in &self.cards {
+            assert!(!m.contains_key(&card.arena_id));
+            m.insert(card.arena_id, card);
         }
         m
     }

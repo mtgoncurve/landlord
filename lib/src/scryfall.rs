@@ -10,6 +10,8 @@ use time::{Date, Duration};
 pub struct ScryfallCard {
   pub name: String,
   #[serde(default)]
+  pub id: String,
+  #[serde(default)]
   pub oracle_id: String,
   #[serde(default)]
   pub mana_cost: String,
@@ -352,6 +354,7 @@ impl Into<Card> for ScryfallCard {
       .map_or(false, |f| f == &Legality::Legal);
     Card {
       name,
+      id: self.id,
       oracle_id: self.oracle_id,
       hash,
       mana_cost_string: self.mana_cost,
