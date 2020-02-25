@@ -2,6 +2,7 @@ use crate::card::*;
 use crate::data::*;
 use regex::Regex;
 use std::collections::HashMap;
+use std::ops::Deref;
 use time::Date;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -280,6 +281,25 @@ impl Deck {
       builder = builder.insert_count(card, amount);
     }
     Ok(builder.build())
+  }
+
+  pub fn to_string(&self) -> String {
+    let mut res = Vec::with_capacity(self.cards.len());
+    for cc in &self.cards {
+      res.push(format!(
+        "{} {} ({:?})\n",
+        cc.count, cc.card.name, cc.card.set
+      ));
+    }
+    res.concat()
+  }
+}
+
+impl Deref for Deck {
+  type Target = [DeckCard];
+
+  fn deref(&self) -> &Self::Target {
+    &self.cards
   }
 }
 
