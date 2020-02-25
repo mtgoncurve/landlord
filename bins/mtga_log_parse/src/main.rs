@@ -13,12 +13,8 @@ extern crate lazy_static;
 extern crate regex;
 extern crate time;
 
-//use landlord::card::Card;
-//use std::fs::File;
-//use std::fs::OpenOptions;
-//use std::path::Path;
-use flate2::read::GzDecoder;
-use landlord::card::{Card, CardKind, Collection};
+use landlord::card::{Card, CardKind};
+use landlord::data::*;
 use landlord::deck::{Deck, DeckBuilder};
 use regex::Regex;
 use std::collections::BTreeMap;
@@ -26,7 +22,6 @@ use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fmt;
-use std::io::prelude::*;
 use std::io::BufRead;
 use time::Date;
 
@@ -89,23 +84,6 @@ impl Log {
     }
 }
 
-/// Returns a new collection of all cards from data/all_cards.landlord
-fn all_cards() -> Result<Collection, bincode::Error> {
-    let b = include_bytes!("../../../data/all_cards.landlord");
-    let mut gz = GzDecoder::new(&b[..]);
-    let mut s: Vec<u8> = Vec::new();
-    gz.read_to_end(&mut s).expect("gz decode failed");
-    bincode::deserialize(&s)
-}
-
-fn net_decks() -> Result<Vec<Deck>, bincode::Error> {
-    let b = include_bytes!("../../../data/net_decks.landlord");
-    let mut gz = GzDecoder::new(&b[..]);
-    let mut s: Vec<u8> = Vec::new();
-    gz.read_to_end(&mut s).expect("gz decode failed");
-    bincode::deserialize(&s)
-}
-
 fn arena2scryfall() -> HashMap<u64, (Option<String>, String)> {
     let s = include_str!("../../../data/arena2scryfall.json");
     serde_json::from_str(s).expect("arena2scryfall.json deserialize always works")
@@ -152,11 +130,6 @@ pub fn build_deck(collection: &Deck, deck: &Deck) -> (Deck, Deck) {
         }
     }
     (have.build(), need.build())
-}
-
-lazy_static! {
-    pub static ref ALL_CARDS: Collection = all_cards().expect("all_cards() failed");
-    pub static ref NET_DECKS: Vec<Deck> = net_decks().expect("net_decks() failed");
 }
 
 #[cfg(target_os = "macos")]

@@ -181,7 +181,6 @@ impl Mulligan for London {
 
 #[cfg(test)]
 mod tests {
-  use crate::card::*;
   use crate::deck::*;
   use crate::hand::*;
   use crate::mulligan::london::*;

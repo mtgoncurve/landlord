@@ -6,28 +6,12 @@ extern crate serde_json;
 extern crate log;
 extern crate env_logger;
 extern crate landlord;
-#[macro_use]
-extern crate lazy_static;
 
-use flate2::read::GzDecoder;
 use landlord::arena::{DataCard, DataLoc, IsoCode};
-use landlord::card::{Collection, SetCode};
+use landlord::card::SetCode;
+use landlord::data::*;
 use std::collections::HashMap;
 use std::env;
-use std::io::prelude::*;
-
-/// Returns a new collection of all cards from data/all_cards.landlord
-fn all_cards() -> Result<Collection, bincode::Error> {
-  let b = include_bytes!("../../../data/all_cards.landlord");
-  let mut gz = GzDecoder::new(&b[..]);
-  let mut s: Vec<u8> = Vec::new();
-  gz.read_to_end(&mut s).expect("gz decode failed");
-  bincode::deserialize(&s)
-}
-
-lazy_static! {
-  pub static ref ALL_CARDS: Collection = all_cards().expect("all_cards() failed");
-}
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 struct CardSetKey {
@@ -78,8 +62,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     m
   };
-  let all_cards = all_cards()?;
-  let card_lookup = all_cards.group_by_name();
+  let card_lookup = ALL_CARDS.group_by_name();
   let mut results = HashMap::new();
   for data_card in &data_cards {
     if !data_card.is_craftable {
@@ -93,17 +76,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
     let scryfall_id = {
       if let Some(cards) = card_lookup.get(&title_lower) {
-        /*
-        if title_lower == "duress" {
-          warn!("{:?} {} {:?}", cards, arena_id, arena_set);
-        }
-        */
         let mut id = None;
         let mut check_by_set = true;
         for card in cards {
           if card.arena_id == arena_id {
             id = Some(card.id.clone());
             check_by_set = false;
+            assert!(card.set == arena_set);
             break;
           }
         }
