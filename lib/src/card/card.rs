@@ -1,7 +1,7 @@
 //! # Internal card representation
 //!
 pub use crate::card::mana_cost::*;
-pub use crate::scryfall::*;
+pub use crate::scryfall::{GameFormat, Legality, Object, Rarity, SetCode};
 use std::hash::{Hash, Hasher};
 
 // TODO: [image_uri] Consider storing only the suffix and concatenate with the hostname on the UI side
