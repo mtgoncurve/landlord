@@ -28,4 +28,8 @@ pub struct DataCard {
     #[serde(rename = "titleId")]
     pub titleid: u64,
     pub set: String,
+    #[serde(rename = "isCollectible")]
+    pub is_collectible: bool,
+    #[serde(rename = "isCraftable")]
+    pub is_craftable: bool,
 }
