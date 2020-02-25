@@ -210,7 +210,7 @@ fn mana_cost_symbols_from_str(mana_cost_str: &str) -> Vec<(ManaCost, Option<Mana
 
 #[cfg(test)]
 mod tests {
-  use crate::mana_cost::*;
+  use crate::card::mana_cost::*;
 
   #[test]
   fn empty_string() {

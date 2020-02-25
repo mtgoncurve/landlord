@@ -128,7 +128,13 @@ mod tests {
 
   #[test]
   fn deck_with_not_enough_cards_should_not_panic() {
-    let deck = decklist!(include_str!("decks/not_enough_cards"));
+    let code = "
+      1 Discovery // Dispersal (GRN) 223
+      1 Unmoored Ego (GRN) 212
+      3 Vraska's Contempt (XLN) 129
+      1 Watery Grave (GRN) 259
+    ";
+    let deck = decklist!(code);
     Simulation::from_config(&SimulationConfig {
       run_count: 10,
       draw_count: 10,
