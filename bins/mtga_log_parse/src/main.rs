@@ -1,93 +1,17 @@
-extern crate bincode;
-extern crate flate2;
-extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
-#[macro_use]
-extern crate serde_derive;
 extern crate landlord;
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
 extern crate time;
 
+use landlord::arena::Log;
 use landlord::card::{Card, CardKind};
 use landlord::data::*;
 use landlord::deck::{Deck, DeckBuilder};
-use regex::Regex;
-use std::collections::BTreeMap;
 use std::collections::HashMap;
+#[cfg(not(target_os = "macos"))]
 use std::env;
-use std::error::Error;
-use std::fmt;
-use std::io::BufRead;
-use time::Date;
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct GetPlayerCardsV3Payload {
-    id: u64,
-    payload: BTreeMap<String, usize>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Log {
-    collection: Option<GetPlayerCardsV3Payload>,
-}
-
-#[derive(Debug)]
-pub enum LogError {
-    BadPayload,
-}
-
-impl fmt::Display for LogError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "log error")
-    }
-}
-
-impl Error for LogError {
-    fn description(&self) -> &str {
-        match self {
-            &Self::BadPayload => "bad payload",
-        }
-    }
-
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        None
-    }
-}
-
-impl Log {
-    pub fn from_str(log: &str) -> Result<Self, LogError> {
-        lazy_static! {
-            //https://regex101.com/r/OluNfe/3
-            static ref GET_PLAYER_CARDS_V3_REGEX : Regex =
-                Regex::new(r"^.*<== PlayerInventory.GetPlayerCardsV3\s?(?P<payload>.*)")
-                    .expect("Failed to compile GET_PLAYER_CARDS_V3_REGEX");
-        }
-        let cursor = std::io::Cursor::new(log);
-        let lines_iter = cursor.lines().map(|l| l.unwrap());
-        let mut collections: Vec<GetPlayerCardsV3Payload> = Vec::new();
-        for line in lines_iter {
-            if let Some(caps) = GET_PLAYER_CARDS_V3_REGEX.captures(&line) {
-                let payload = &caps["payload"];
-                if let Ok(payload) = serde_json::from_str(payload) {
-                    collections.push(payload);
-                }
-            }
-        }
-        Ok(Self {
-            collection: collections.last().map(|c| c.clone()),
-        })
-    }
-}
-
-fn arena2scryfall() -> HashMap<u64, (Option<String>, String)> {
-    let s = include_str!("../../../data/arena2scryfall.json");
-    serde_json::from_str(s).expect("arena2scryfall.json deserialize always works")
-}
+use time::{Date, OffsetDateTime};
 
 fn correct_wrong_mtggoldfish_set_codes(deck: &mut Deck, date: Date) {
     for cc in &mut deck.cards {
@@ -137,7 +61,7 @@ fn data_dir() -> std::path::PathBuf {
     ["arena-data", "output_log.txt"].iter().collect()
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "macos"))]
 fn data_dir() -> std::path::PathBuf {
     let app_data = env::var("APP_DATA").expect("$APP_DATA should be set");
     [
@@ -160,19 +84,16 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let all_cards = all_cards()?.sort_by_arena_id();
     let scryfall_id_lookup = all_cards.group_by_id();
     let name_lookup = all_cards.group_by_name();
-    let arena_2_scryfall = arena2scryfall();
 
     let mut builder = DeckBuilder::new();
 
     if let Some(collection) = log.collection {
         for (arena_id_str, count) in collection.payload {
             let arena_id = arena_id_str.parse::<u64>().expect("parse to u64 works");
-            if let Some(id_name) = arena_2_scryfall.get(&arena_id) {
+            if let Some(id_name) = ARENA_2_SCRYFALL.get(&arena_id) {
+                let id = &id_name.0;
                 let name = &id_name.1;
-                if let Some(id) = &id_name.0 {
-                    if id.is_empty() {
-                        continue;
-                    }
+                if !id.is_empty() {
                     let mut card =
                         Card::clone(scryfall_id_lookup.get(id).expect("id lookup must work"));
                     // Ugh. We found the card but it might have a weird name (like the adventure cards)
@@ -206,7 +127,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let collection = builder.build();
-    let today = Date::today();
+    let today = OffsetDateTime::now_local().date();
     let mut decks = net_decks()?;
     {
         let mut ranked = Vec::new();

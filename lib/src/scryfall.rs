@@ -314,7 +314,7 @@ impl Into<Card> for ScryfallCard {
       all_mana_costs = vec![mana_cost];
     } else {
       kind = CardKind::Unknown;
-      all_mana_costs = parse_mana_costs(&self.mana_cost).into_iter().collect();
+      all_mana_costs = mana_costs_from_str(&self.mana_cost).into_iter().collect();
       mana_cost = ManaCost::from_rgbuwc(
         all_mana_costs[0].r,
         all_mana_costs[0].g,
@@ -348,10 +348,6 @@ impl Into<Card> for ScryfallCard {
     let mut s = DefaultHasher::new();
     name.hash(&mut s);
     let hash = s.finish();
-    let standard_legal = self
-      .legalities
-      .get(&GameFormat::Standard)
-      .map_or(false, |f| f == &Legality::Legal);
     Card {
       name,
       id: self.id,
@@ -366,7 +362,6 @@ impl Into<Card> for ScryfallCard {
       arena_id: self.arena_id,
       set: self.set,
       rarity: self.rarity,
-      standard_legal,
     }
   }
 }

@@ -8,7 +8,8 @@ extern crate landlord;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use landlord::card::{Card, Collection, Legality, ScryfallCard};
+use landlord::card::{Card, Legality, ScryfallCard};
+use landlord::collection::Collection;
 use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;

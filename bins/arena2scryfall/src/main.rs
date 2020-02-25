@@ -62,56 +62,58 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     m
   };
-  let card_lookup = ALL_CARDS.group_by_name();
+  let scryfall_names = ALL_CARDS.group_by_name();
   let mut results = HashMap::new();
   for data_card in &data_cards {
-    if !data_card.is_craftable {
-      continue;
-    }
+    let arena_id = data_card.grpid;
     let titleid = data_card.titleid;
     let title = string_lookup.get(&titleid).expect("ok");
     let title_lower = title.to_lowercase();
-    let arena_id = data_card.grpid;
     let arena_set_string = data_card.set.to_uppercase();
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
-    let scryfall_id = {
-      if let Some(cards) = card_lookup.get(&title_lower) {
-        let mut id = None;
-        let mut check_by_set = true;
-        for card in cards {
-          if card.arena_id == arena_id {
-            id = Some(card.id.clone());
-            check_by_set = false;
-            assert!(card.set == arena_set);
-            break;
-          }
+    // Ignore uncraftable cards
+    if !data_card.is_craftable {
+      debug!(
+        "Skipping uncraftable {} {} ({})",
+        title, arena_set_string, arena_id
+      );
+      continue;
+    }
+    let cards = scryfall_names.get(&title_lower);
+    // Does the title lookup fail?
+    if cards.is_none() {
+      warn!("Could not find card in scryfall data by name \"{}\"", title);
+      continue;
+    }
+    let cards = cards.unwrap();
+    let find_card_idx = || {
+      // Check if one of the cards has a matching arena id
+      // if so, that's our card
+      for (i, card) in cards.iter().enumerate() {
+        if card.arena_id == arena_id {
+          return Some(i);
         }
-        if check_by_set {
-          for card in cards {
-            if card.set == arena_set {
-              id = Some(card.id.clone());
-              break;
-            }
-          }
-        }
-        id
-      } else {
-        None
       }
+      for (i, card) in cards.iter().enumerate() {
+        if card.set == arena_set {
+          return Some(i);
+        }
+      }
+      return None;
     };
-    if scryfall_id.is_none() {
+    let card_idx = find_card_idx();
+    if card_idx.is_none() {
       warn!(
-        "Could not resolve scryfall oracle id for card/set/arena id: {} {:?} {}",
+        "Could not resolve scryfall id for card/set/arena id: {} {:?} {}",
         title, arena_set, arena_id
       );
+      continue;
     }
-    results.insert(arena_id, (scryfall_id, title_lower));
+    let card_idx = card_idx.unwrap();
+    let found_card = cards[card_idx];
+    results.insert(arena_id, (found_card.id.clone(), title_lower));
   }
-  let nullkey = String::from("null");
-  let results_rev: HashMap<String, u64> = results
-    .iter()
-    .map(|(k, v)| (v.0.as_ref().unwrap_or(&nullkey).clone(), *k))
-    .collect();
+  let results_rev: HashMap<String, u64> = results.iter().map(|(k, v)| (v.0.clone(), *k)).collect();
   serde_json::to_writer(
     &std::fs::File::create("data/arena2scryfall.json")?,
     &results,

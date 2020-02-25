@@ -1,30 +1,8 @@
-//! # Card representation and deck list parsing
+//! # Internal card representation
 //!
 use crate::mana_cost::*;
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-
-// TODO Rethink including these in the Card definition
 pub use crate::scryfall::*;
-
-/// A Collection represents a deck or a library of cards
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Collection {
-    pub cards: Vec<Card>,
-    sort: CollectionSort,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum CollectionSort {
-    Name,
-    ArenaId,
-}
-
-impl Default for CollectionSort {
-    fn default() -> Self {
-        Self::Name
-    }
-}
+use std::hash::{Hash, Hasher};
 
 // TODO: [image_uri] Consider storing only the suffix and concatenate with the hostname on the UI side
 // TODO: [mana_cost_string] Remove mana_cost_string and generate the string from a ManaCost
@@ -59,8 +37,28 @@ pub struct Card {
     pub rarity: Rarity,
     /// Card release set code
     pub set: SetCode,
-    /// True if the card is legal in standard
-    pub standard_legal: bool,
+}
+
+/// CardKind represents an internal card type representation.
+/// It is a superset of the [official card types](https://mtg.gamepedia.com/Card_type)
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum CardKind {
+    // Lands
+    BasicLand = 0,
+    TapLand = 1,
+    CheckLand = 2,
+    ShockLand = 3,
+    OtherLand = 4,
+    ForcedLand = 5,
+    // Other
+    Creature,
+    Spell,
+    Enchantment,
+    Instant,
+    Planeswalker,
+    Sorcery,
+    Artifact,
+    Unknown,
 }
 
 impl Card {
@@ -96,30 +94,6 @@ impl Hash for Card {
     }
 }
 
-/// CardKind represents an internal card type representation.
-/// It is a superset of the [official card types](https://mtg.gamepedia.com/Card_type)
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum CardKind {
-    // Lands
-    BasicLand = 0,
-    TapLand = 1,
-    CheckLand = 2,
-    ShockLand = 3,
-    OtherLand = 4,
-    ForcedLand = 5,
-    // Other
-    Creature,
-    Spell,
-    Enchantment,
-    Instant,
-    Planeswalker,
-    Sorcery,
-    Artifact,
-    Unknown,
-}
-
-/// ManaColor represents a [color](https://mtg.gamepedia.com/Color)
-
 impl Default for CardKind {
     fn default() -> Self {
         Self::Unknown
@@ -143,110 +117,6 @@ impl CardKind {
             || self == Self::TapLand
             || self == Self::OtherLand
             || self == Self::ForcedLand
-    }
-}
-
-impl Collection {
-    pub fn group_by_name<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
-        let mut m = HashMap::new();
-        for card in &self.cards {
-            let cards = m.entry(&card.name).or_insert(Vec::new());
-            cards.push(card);
-        }
-        m
-    }
-
-    pub fn group_by_oracle_id<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
-        let mut m = HashMap::new();
-        for card in &self.cards {
-            let cards = m.entry(&card.oracle_id).or_insert(Vec::new());
-            cards.push(card);
-        }
-        m
-    }
-
-    pub fn group_by_set<'a>(&'a self) -> HashMap<SetCode, Vec<&'a Card>> {
-        let mut m = HashMap::new();
-        for card in &self.cards {
-            let cards = m.entry(card.set).or_insert(Vec::new());
-            cards.push(card);
-        }
-        m
-    }
-
-    pub fn group_by_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
-        let mut m = HashMap::new();
-        for card in &self.cards {
-            if card.id.is_empty() {
-                continue;
-            }
-            assert!(!m.contains_key(&card.id));
-            m.insert(&card.id, card);
-        }
-        m
-    }
-
-    pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, &'a Card> {
-        let mut m = HashMap::new();
-        for card in &self.cards {
-            assert!(!m.contains_key(&card.arena_id));
-            m.insert(card.arena_id, card);
-        }
-        m
-    }
-
-    /// Returns a new collection of cards
-    pub fn from_cards(mut cards: Vec<Card>) -> Self {
-        // sort for binary_search used in card_from_name
-        // note that Card implements Ord by
-        cards.sort();
-        Self {
-            cards,
-            sort: CollectionSort::Name,
-        }
-    }
-
-    pub fn sort_by_arena_id(mut self) -> Self {
-        self.cards.sort_unstable_by_key(|c| c.arena_id);
-        self.sort = CollectionSort::ArenaId;
-        self
-    }
-
-    pub fn sort_by_name(mut self) -> Self {
-        self.cards.sort();
-        self.sort = CollectionSort::Name;
-        self
-    }
-
-    /// Returns a card from the card name
-    #[inline]
-    pub fn card_from_name(&self, name: &str) -> Option<&Card> {
-        assert_eq!(self.sort, CollectionSort::Name);
-        let name_lowercase = name.to_lowercase();
-        let res = self
-            .cards
-            .binary_search_by(|probe| probe.name.to_lowercase().cmp(&name_lowercase));
-        res.map(|idx| &self.cards[idx]).ok()
-    }
-
-    /// Returns a card from the arena id
-    #[inline]
-    pub fn card_from_arena_id(&self, arena_id: u64) -> Option<&Card> {
-        assert_eq!(self.sort, CollectionSort::ArenaId);
-        let res = self
-            .cards
-            .binary_search_by(|probe| probe.arena_id.cmp(&arena_id));
-        res.map(|idx| &self.cards[idx]).ok()
-    }
-
-    /// Returns the number of cards in the collection
-    pub fn len(&self) -> usize {
-        self.cards.len()
-    }
-
-    /// Returns true if the collection is empty
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 }
 
