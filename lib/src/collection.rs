@@ -1,4 +1,4 @@
-//! # Card representation and deck list parsing
+//! # Collection
 //!
 use crate::card::{Card, SetCode};
 use std::collections::HashMap;

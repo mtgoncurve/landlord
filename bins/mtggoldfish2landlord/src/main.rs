@@ -5,15 +5,18 @@ extern crate serde;
 extern crate log;
 #[macro_use]
 extern crate landlord;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate reqwest;
 extern crate select;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use landlord::card::GameFormat;
+use landlord::prelude::*;
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -25,6 +28,47 @@ macro_rules! fetch {
     info!("Fetching {}", $url);
     reqwest::blocking::get($url)?.text()?
   }};
+}
+
+lazy_static! {
+  pub static ref ORACLE_ID_LOOKUP: HashMap<&'static String, Vec<&'static Card>> =
+    ALL_CARDS.group_by_oracle_id();
+}
+
+// For each card, check if the set code is in standard and if not, search
+fn fix_set_code(deck: &mut Deck) {
+  for cc in &mut deck.cards {
+    let mut card = &mut cc.card;
+    if card.set.in_standard() {
+      continue;
+    }
+    let current = card.set;
+    if let Some(cards) = ORACLE_ID_LOOKUP.get(&card.oracle_id) {
+      let mut found = false;
+      for other in cards {
+        if other.in_standard() {
+          card.set = other.set;
+          found = true;
+          break;
+        }
+      }
+      if !found {
+        debug!(
+          "Could not find a variant of \"{}\" w/ oracle id \"{}\" in standard",
+          card.name, card.oracle_id
+        );
+      }
+    } else {
+      debug!(
+        "Could not find \"{}\"by oracle id \"{}\"",
+        card.name, card.oracle_id
+      );
+    }
+    debug!(
+      "Fix card \"{}\" set code from {:?} to {:?}",
+      card.name, current, card.set
+    );
+  }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -97,6 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       deck.title = Some(title.clone());
       deck.url = Some(deck_url);
       deck.format = GameFormat::Standard;
+      fix_set_code(&mut deck);
       results.push(deck);
     }
   }

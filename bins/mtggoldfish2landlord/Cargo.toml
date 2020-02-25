@@ -13,3 +13,4 @@ flate2 = "1.0"
 landlord = {path="../../lib"}
 reqwest = { version = "0.10", features = ["blocking"]}
 select = "0.4"
+lazy_static = "1.2.0"
