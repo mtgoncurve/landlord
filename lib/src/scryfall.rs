@@ -1,5 +1,4 @@
-use crate::card::{Card, CardKind};
-use crate::mana_cost::*;
+use crate::card::*;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::collections::HashSet;

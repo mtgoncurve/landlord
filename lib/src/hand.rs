@@ -1,6 +1,5 @@
 //! # Simulation hands and auto tap algorithm
-use crate::card::{Card, CardKind};
-use crate::mana_cost::{ManaColor, ManaCost};
+use crate::card::{Card, CardKind, ManaColor, ManaCost};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
 

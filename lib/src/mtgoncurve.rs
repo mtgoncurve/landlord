@@ -1,10 +1,9 @@
 //! # https://mtgoncurve.com interface
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
-use crate::card::{Card, CardKind};
+use crate::card::{Card, CardKind, ManaCost};
 use crate::data::ORACLE_CARDS;
 use crate::deck::Deck;
-use crate::mana_cost::ManaCost;
 use crate::mulligan::London;
 use crate::simulation::{Observations, Simulation, SimulationConfig};
 
@@ -397,7 +396,27 @@ mod tests {
 
     #[test]
     fn test_0() {
-        let code = include_str!("decks/24-60-8");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            8 Swamp #(This corresponds to the row in the table)
+            16 Detection Tower #(This needs to sum with Swamps to 24)
+            20 Darksteel Colossus #(This needs to sum to 60 cards total)
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -418,38 +437,38 @@ mod tests {
     #[test]
     fn test_1() {
         let code = "
-4 Doom Foretold (ELD) 187
-4 Omen of the Sea (THB) 58
-4 Thought Erasure (GRN) 206
-4 Teferi, Time Raveler (WAR) 221
-3 Treacherous Blessing (THB) 117
-4 Oath of Kaya (WAR) 209
-3 Kaya's Wrath (RNA) 187
-2 Archon of Sun's Grace (THB) 3
-2 Dream Trawler (THB) 214
-1 Time Wipe (WAR) 223
-3 Dance of the Manse (ELD) 186
-4 Hallowed Fountain (RNA) 251
-4 Watery Grave (GRN) 259
-4 Godless Shrine (RNA) 248
-2 Temple of Deceit (THB) 245
-2 Temple of Silence (M20) 256
-2 Temple of Enlightenment (THB) 246
-1 Castle Ardenvale (ELD) 238
-2 Castle Vantress (ELD) 242
-2 Plains (M20) 261
-2 Swamp (M20) 272
-1 Island (M20) 267
+            4 Doom Foretold (ELD) 187
+            4 Omen of the Sea (THB) 58
+            4 Thought Erasure (GRN) 206
+            4 Teferi, Time Raveler (WAR) 221
+            3 Treacherous Blessing (THB) 117
+            4 Oath of Kaya (WAR) 209
+            3 Kaya's Wrath (RNA) 187
+            2 Archon of Sun's Grace (THB) 3
+            2 Dream Trawler (THB) 214
+            1 Time Wipe (WAR) 223
+            3 Dance of the Manse (ELD) 186
+            4 Hallowed Fountain (RNA) 251
+            4 Watery Grave (GRN) 259
+            4 Godless Shrine (RNA) 248
+            2 Temple of Deceit (THB) 245
+            2 Temple of Silence (M20) 256
+            2 Temple of Enlightenment (THB) 246
+            1 Castle Ardenvale (ELD) 238
+            2 Castle Vantress (ELD) 242
+            2 Plains (M20) 261
+            2 Swamp (M20) 272
+            1 Island (M20) 267
 
-3 Glass Casket (ELD) 15
-2 Dovin's Veto (WAR) 193
-2 Ashiok, Dream Render (WAR) 228
-2 Revoke Existence (THB) 34
-1 Soul-Guide Lantern (THB) 237
-2 Duress (XLN) 105
-1 Devout Decree (M20) 13
-2 Banishing Light (THB) 4
-    ";
+            3 Glass Casket (ELD) 15
+            2 Dovin's Veto (WAR) 193
+            2 Ashiok, Dream Render (WAR) 228
+            2 Revoke Existence (THB) 34
+            1 Soul-Guide Lantern (THB) 237
+            2 Duress (XLN) 105
+            1 Devout Decree (M20) 13
+            2 Banishing Light (THB) 4
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -469,36 +488,36 @@ mod tests {
     #[test]
     fn test_2() {
         let code = "
-4 Growth Spiral (RNA) 178
-2 Murderous Rider (ELD) 97
-2 Temple of Mystery (M20) 255
-2 Temple of Malady (M20) 254
-2 Fabled Passage (ELD) 244
-4 Breeding Pool (RNA) 246
-4 Overgrown Tomb (GRN) 253
-4 Watery Grave (GRN) 259
-3 Uro, Titan of Nature's Wrath (THB) 229
-4 Medomai's Prophecy (THB) 53
-3 Elspeth's Nightmare (THB) 91
-4 Dryad of the Ilysian Grove (THB) 169
-1 Field of Ruin (THB) 242
-4 Hydroid Krasis (RNA) 183
-2 Island (ELD) 254
-4 Nissa, Who Shakes the World (WAR) 169
-2 Swamp (M20) 269
-3 Forest (M19) 280
-4 Ashiok, Nightmare Muse (THB) 208
-2 Eat to Extinction (THB) 90
+            4 Growth Spiral (RNA) 178
+            2 Murderous Rider (ELD) 97
+            2 Temple of Mystery (M20) 255
+            2 Temple of Malady (M20) 254
+            2 Fabled Passage (ELD) 244
+            4 Breeding Pool (RNA) 246
+            4 Overgrown Tomb (GRN) 253
+            4 Watery Grave (GRN) 259
+            3 Uro, Titan of Nature's Wrath (THB) 229
+            4 Medomai's Prophecy (THB) 53
+            3 Elspeth's Nightmare (THB) 91
+            4 Dryad of the Ilysian Grove (THB) 169
+            1 Field of Ruin (THB) 242
+            4 Hydroid Krasis (RNA) 183
+            2 Island (ELD) 254
+            4 Nissa, Who Shakes the World (WAR) 169
+            2 Swamp (M20) 269
+            3 Forest (M19) 280
+            4 Ashiok, Nightmare Muse (THB) 208
+            2 Eat to Extinction (THB) 90
 
-3 Mystical Dispute (ELD) 58
-3 Destiny Spinner (THB) 168
-3 Agonizing Remorse (THB) 83
-1 Casualties of War (WAR) 187
-1 Massacre Girl (WAR) 99
-2 Lovestruck Beast (ELD) 165
-1 Ashiok, Dream Render (WAR) 228
-1 Shadowspear (THB) 236
-    ";
+            3 Mystical Dispute (ELD) 58
+            3 Destiny Spinner (THB) 168
+            3 Agonizing Remorse (THB) 83
+            1 Casualties of War (WAR) 187
+            1 Massacre Girl (WAR) 99
+            2 Lovestruck Beast (ELD) 165
+            1 Ashiok, Dream Render (WAR) 228
+            1 Shadowspear (THB) 236
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -547,7 +566,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
     fn karsten_test_24_60_8() {
-        let code = include_str!("decks/24-60-8");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            8 Swamp # (This corresponds to the row in the table)
+            16 Detection Tower # (This needs to sum with Swamps to 24)
+            20 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -586,7 +625,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
     fn karsten_test_24_60_14() {
-        let code = include_str!("decks/24-60-14");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            14 Swamp # (This corresponds to the row in the table)
+            10 Detection Tower # (This needs to sum with Swamps to 24)
+            20 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -625,7 +684,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-40-cards-768x167.png
     #[test]
     fn karsten_test_17_40_5() {
-        let code = include_str!("decks/17-40-5");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            5 Swamp # (This corresponds to the row in the table)
+            12 Detection Tower # (This needs to sum with Swamps to 17)
+            7 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -664,7 +743,27 @@ mod tests {
     // table: http://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-99-cards.png
     #[test]
     fn karsten_test_40_99_15() {
-        let code = include_str!("decks/40-99-15");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            15 Swamp # (This corresponds to the row in the table)
+            25 Detection Tower # (This needs to sum with Swamps to 17)
+            43 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),

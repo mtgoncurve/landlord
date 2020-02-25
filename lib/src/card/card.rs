@@ -1,6 +1,6 @@
 //! # Internal card representation
 //!
-pub use crate::mana_cost::*;
+pub use crate::card::mana_cost::*;
 pub use crate::scryfall::*;
 use std::hash::{Hash, Hasher};
 

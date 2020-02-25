@@ -697,21 +697,94 @@ mod tests {
 
   #[test]
   fn deck_aetherhub_45936() {
-    let code = include_str!("decks/45936");
+    let code = "
+      4 Drowned Catacomb (XLN) 253
+      4 Glacial Fortress (XLN) 255
+      2 Search for Azcanta (XLN) 74
+      2 Vraska's Contempt (XLN) 129
+      1 Golden Demise (RIX) 73
+      3 Moment of Craving (RIX) 79
+      4 Isolated Chapel (DAR) 241
+      3 Teferi, Hero of Dominaria (DAR) 207
+      2 Cast Down (DAR) 81
+      1 Lyra Dawnbringer (DAR) 26
+      2 The Eldest Reborn (DAR) 90
+      1 Cleansing Nova (M19) 9
+      1 Chromium, the Mutable (M19) 214
+      3 Evolving Wilds (RIX) 186
+      3 Thought Erasure (GRN) 206
+      2 Disinformation Campaign (GRN) 167
+      4 Watery Grave (GRN) 259
+      4 Sinister Sabotage (GRN) 54
+      1 Chemister's Insight (GRN) 32
+      3 Ritual of Soot (GRN) 84
+      1 Price of Fame (GRN) 83
+      2 Syncopate (DAR) 67
+      2 Swamp (XLN) 268
+      2 Island (XLN) 264
+      3 Plains (XLN) 263
+
+      1 Ixalan's Binding (XLN) 17
+      1 Golden Demise (RIX) 73
+      1 The Eldest Reborn (DAR) 90
+      2 Fungal Infection (DAR) 94
+      2 Duress (XLN) 105
+      3 Thief of Sanity (GRN) 205
+      2 Unmoored Ego (GRN) 212
+      3 Blood Operative (GRN) 63
+    ";
     let deck = decklist!(code);
     assert_eq!(deck.len(), 60);
   }
 
   #[test]
   fn deck_aetherhub_50520() {
-    let code = include_str!("decks/50520");
+    let code = "
+      4 Chart a Course (XLN) 48
+      3 Dive Down (XLN) 53
+      1 Drowned Catacomb (XLN) 253
+      2 Search for Azcanta (XLN) 74
+      3 Spell Pierce (XLN) 81
+      4 Sulfur Falls (DAR) 247
+      4 Opt (XLN) 65
+      3 Enigma Drake (M19) 217
+      3 Niv-Mizzet, Parun (GRN) 192
+      1 Beacon Bolt (GRN) 154
+      4 Crackling Drake (GRN) 163
+      4 Steam Vents (GRN) 257
+      5 Mountain (XLN) 272
+      4 Discovery // Dispersal (GRN) 223
+      4 Lava Coil (GRN) 108
+      7 Island (XLN) 264
+      4 Tormenting Voice (M19) 164
+    ";
     let deck = decklist!(code);
     assert_eq!(deck.len(), 60);
   }
 
   #[test]
   fn deck_aetherhub_50817() {
-    let code = include_str!("decks/50817");
+    let code = "
+      4 Dragonskull Summit (XLN) 252
+      4 Drowned Catacomb (XLN) 253
+      2 Search for Azcanta (XLN) 74
+      3 Vraska's Contempt (XLN) 129
+      3 Angrath, the Flame-Chained (RIX) 152
+      5 Swamp (XLN) 268
+      1 Island (XLN) 264
+      3 Moment of Craving (RIX) 79
+      4 Sulfur Falls (DAR) 247
+      3 Cast Down (DAR) 81
+      2 The Eldest Reborn (DAR) 90
+      4 Thought Erasure (GRN) 206
+      4 Steam Vents (GRN) 257
+      4 Watery Grave (GRN) 259
+      2 Discovery // Dispersal (GRN) 223
+      4 Sinister Sabotage (GRN) 54
+      2 Chemister's Insight (GRN) 32
+      4 Ritual of Soot (GRN) 84
+      2 Ral, Izzet Viceroy (GRN) 195
+    ";
     let deck = decklist!(code);
     assert_eq!(deck.len(), 60);
   }
