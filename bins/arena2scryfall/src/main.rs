@@ -77,7 +77,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data_loc = data_locs
       .iter()
       .find(|&loc| loc.iso_code == IsoCode::EnUS)
-      .expect("ok");
+      .expect("en-US iso code must exist");
     let mut m = HashMap::new();
     for k in &data_loc.keys {
       m.insert(k.id, k.text.clone());
@@ -90,7 +90,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arena_id = data_card.grpid;
     let titleid = data_card.titleid;
     let collector_number = &data_card.collector_number;
-    let title = string_lookup.get(&titleid).expect("ok");
+    let title = string_lookup.get(&titleid).expect("can't fail");
     let title_lower = title.to_lowercase();
     let arena_set_string = data_card.set.to_uppercase();
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
