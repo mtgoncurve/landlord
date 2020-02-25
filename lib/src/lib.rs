@@ -4,9 +4,10 @@
 //! in order to determine the probability to play cards on curve. It can theoretically be used
 //! be used for determining the probability of other events. It is currently used by [https://mtgoncurve.com](https://mtgoncurve.com).
 
+extern crate serde;
+extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 #[macro_use]
 extern crate lazy_static;
 extern crate bincode;
@@ -22,6 +23,7 @@ pub mod arena;
 pub mod card;
 #[macro_use]
 pub mod deck;
+pub mod collection;
 pub mod data;
 pub mod hand;
 pub mod mana_cost;

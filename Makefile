@@ -1,6 +1,7 @@
 all:
 	@echo Available tasks:
 	@echo make card-update '# Download the latest Scryfall JSON dump and generate a new data/all_cards.landlord'
+	@echo make arena       '# Generate arena id to scryfall id associations'
 	@echo make net-decks   '# Scrape the latest net decks from MTG Goldfish and generate a new data/net_decks.landlord'
 	@echo make test        '# Run cargo test'
 	@echo make clean       '# Run cargo clean'
@@ -14,6 +15,9 @@ card-update:
 
 net-decks:
 	RUST_LOG=info cargo run --release --bin mtggoldfish2landlord data/net_decks.landlord
+
+arena:
+	RUST_LOG=info cargo run --release --bin arena2scryfall
 
 install-wasm-pack:
 	curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -41,4 +45,4 @@ publish:
 
 deploy: build publish
 
-.PHONY: all card-update net-decks install-wasm-pack check clean test bench build publish deploy
+.PHONY: all card-update arena net-decks install-wasm-pack check clean test bench build publish deploy

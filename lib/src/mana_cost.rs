@@ -14,6 +14,7 @@ pub struct ManaCost {
   pub c: u8,
 }
 
+/// ManaColor represents a [color](https://mtg.gamepedia.com/Color)
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ManaColor {
   #[serde(rename = "R")]
@@ -107,21 +108,21 @@ impl ManaCost {
   pub const C_BITS: u8 = 0b0010_0000;
 }
 
-pub fn parse_mana_costs(mana_cost_str: &str) -> Vec<ManaCost> {
+pub fn mana_costs_from_str(mana_cost_str: &str) -> Vec<ManaCost> {
   let symbol_stack = mana_cost_symbols_from_str(mana_cost_str);
   // NOTE: The hashset ensures that we do not double count
   // the same mana cost multiple times. This is important for cards
   // that have multiple split costs, like Find {B/G}{B/G} -- i.e. we
   // want combinations (dont care about order) rather than all permutations
   let mut results = HashSet::new();
-  parse_mana_costs_recur(&mut results, ManaCost::new(), &symbol_stack, 0);
+  mana_costs_from_str_recur(&mut results, ManaCost::new(), &symbol_stack, 0);
   // Guarantee the resulting order by sorting
   let mut results_as_vec: Vec<_> = results.into_iter().collect();
   results_as_vec.sort();
   results_as_vec
 }
 
-fn parse_mana_costs_recur(
+fn mana_costs_from_str_recur(
   results: &mut HashSet<ManaCost>,
   current: ManaCost,
   symbol_stack: &[(ManaCost, Option<ManaCost>)],
@@ -139,7 +140,7 @@ fn parse_mana_costs_recur(
   left.u += current.u;
   left.w += current.w;
   left.c += current.c;
-  parse_mana_costs_recur(results, left, symbol_stack, idx + 1);
+  mana_costs_from_str_recur(results, left, symbol_stack, idx + 1);
   if let Some(mut right) = symbol_stack[idx].1 {
     right.r += current.r;
     right.g += current.g;
@@ -147,7 +148,7 @@ fn parse_mana_costs_recur(
     right.u += current.u;
     right.w += current.w;
     right.c += current.c;
-    parse_mana_costs_recur(results, right, symbol_stack, idx + 1);
+    mana_costs_from_str_recur(results, right, symbol_stack, idx + 1);
   }
 }
 
@@ -213,7 +214,7 @@ mod tests {
 
   #[test]
   fn empty_string() {
-    let res = parse_mana_costs("");
+    let res = mana_costs_from_str("");
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].c, 0);
     assert_eq!(res[0].r, 0);
@@ -226,7 +227,7 @@ mod tests {
 
   #[test]
   fn simple_test_0() {
-    let res = parse_mana_costs("{1}{U}");
+    let res = mana_costs_from_str("{1}{U}");
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].c, 1);
     assert_eq!(res[0].r, 0);
@@ -238,7 +239,7 @@ mod tests {
 
   #[test]
   fn x_test_0() {
-    let res = parse_mana_costs("{X}{U}");
+    let res = mana_costs_from_str("{X}{U}");
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].c, 1);
     assert_eq!(res[0].r, 0);
@@ -251,7 +252,7 @@ mod tests {
   // Hybrid mana is of the for {B/R}
   #[test]
   fn hybrid_test_0() {
-    let res = parse_mana_costs("{B/R}");
+    let res = mana_costs_from_str("{B/R}");
     assert_eq!(res.len(), 2);
     //
     assert_eq!(res[0].c, 0);
@@ -277,7 +278,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn split_test_0() {
-    let res = parse_mana_costs("{B} // {2}{B}{R}");
+    let res = mana_costs_from_str("{B} // {2}{B}{R}");
     assert_eq!(res.len(), 2);
     //
     assert_eq!(res[0].c, 0);

@@ -1,9 +1,8 @@
 use crate::card::*;
 use crate::data::*;
-use crate::mana_cost::parse_mana_costs;
-use crate::scryfall::{GameFormat, Rarity, SetCode};
+use crate::mana_cost::*;
 use regex::Regex;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use time::Date;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,13 +22,13 @@ pub struct DeckCard {
 
 #[derive(Debug, Clone)]
 pub struct DeckBuilder {
-  pub cards: BTreeMap<Card, usize>,
+  pub cards: HashMap<Card, usize>,
 }
 
 impl DeckBuilder {
   pub fn new() -> Self {
     Self {
-      cards: BTreeMap::new(),
+      cards: HashMap::new(),
     }
   }
 
@@ -254,7 +253,7 @@ impl Deck {
       // Handle the M = modifier
       if let Some(m_val) = caps.name("M") {
         let mana_cost_str = m_val.as_str();
-        let all_mana_costs = parse_mana_costs(mana_cost_str);
+        let all_mana_costs = mana_costs_from_str(mana_cost_str);
         if all_mana_costs.is_empty() {
           return Err(DeckcodeError(format!(
             "Problematic mana cost ('M = ') specifed at line {}",
