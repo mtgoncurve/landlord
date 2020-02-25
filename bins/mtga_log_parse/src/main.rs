@@ -159,12 +159,12 @@ lazy_static! {
     pub static ref NET_DECKS: Vec<Deck> = net_decks().expect("net_decks() failed");
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 fn data_dir() -> std::path::PathBuf {
     ["arena-data", "output_log.txt"].iter().collect()
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(target_os = "linux")]
 fn data_dir() -> std::path::PathBuf {
     let app_data = env::var("APP_DATA").expect("$APP_DATA should be set");
     [

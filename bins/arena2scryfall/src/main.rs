@@ -42,7 +42,6 @@ fn data_dir() -> std::path::PathBuf {
 
 #[cfg(target_os = "linux")]
 fn data_dir() -> std::path::PathBuf {
-  let app_data = env::var("APP_DATA").expect("$APP_DATA should be set");
   [
     "/mnt",
     "c",
@@ -83,6 +82,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
   let card_lookup = all_cards.group_by_name();
   let mut results = HashMap::new();
   for data_card in &data_cards {
+    if !data_card.is_craftable {
+      continue;
+    }
     let titleid = data_card.titleid;
     let title = string_lookup.get(&titleid).expect("ok");
     let title_lower = title.to_lowercase();
@@ -91,6 +93,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arena_set = arena_set_string.parse::<SetCode>().unwrap();
     let scryfall_id = {
       if let Some(cards) = card_lookup.get(&title_lower) {
+        /*
+        if title_lower == "duress" {
+          warn!("{:?} {} {:?}", cards, arena_id, arena_set);
+        }
+        */
         let mut id = None;
         let mut check_by_set = true;
         for card in cards {
