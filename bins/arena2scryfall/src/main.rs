@@ -11,7 +11,6 @@ use landlord::arena::{DataCard, DataLoc, IsoCode};
 use landlord::card::SetCode;
 use landlord::data::*;
 use std::collections::HashMap;
-use std::env;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 struct CardSetKey {
@@ -19,13 +18,15 @@ struct CardSetKey {
   pub set: SetCode,
 }
 
+// Keep data files here on macos
 #[cfg(target_os = "macos")]
-fn data_dir() -> std::path::PathBuf {
+fn data_directory() -> std::path::PathBuf {
   ["arena-data"].iter().collect()
 }
 
+// Same as Windows, but for running under WSL
 #[cfg(target_os = "linux")]
-fn data_dir() -> std::path::PathBuf {
+fn data_directory() -> std::path::PathBuf {
   [
     "/mnt",
     "c",
@@ -40,13 +41,34 @@ fn data_dir() -> std::path::PathBuf {
   .collect()
 }
 
+// Default install location on windows 10
+#[cfg(target_os = "windows")]
+fn data_directory() -> std::path::PathBuf {
+  [
+    "C:",
+    "Program Files (x86)",
+    "Wizards of The Coast",
+    "MTGA",
+    "MTGA_Data",
+    "Downloads",
+    "Data",
+  ]
+  .iter()
+  .collect()
+}
+
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
   env_logger::init();
-  let _args: Vec<String> = env::args().collect();
+  // !!!!!!!!!!!!!!!!!
+  // data_loc_path and data_card_path are downloaded by the game
+  // client.
+  // TODO: Search for these files by iterating through each file in data_dir
+  let data_dir = data_directory();
   let data_loc_path: std::path::PathBuf =
-    data_dir().join("data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga");
+    data_dir.join("data_loc_3bd5b82dadbd15fd73622330b3396c64.mtga");
   let data_card_path: std::path::PathBuf =
-    data_dir().join("data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga");
+    data_dir.join("data_cards_7c6e2fd8116d32ea30df234867f770c8.mtga");
+  // !!!!!!!!!!!!!!!!!
   let data_loc_string = std::fs::read_to_string(data_loc_path.as_path())?;
   let data_locs: Vec<DataLoc> = serde_json::from_str(&data_loc_string)?;
   let data_card_string = std::fs::read_to_string(data_card_path.as_path())?;
