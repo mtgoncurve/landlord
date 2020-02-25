@@ -22,6 +22,7 @@ pub mod arena;
 pub mod card;
 #[macro_use]
 pub mod deck;
+pub mod data;
 pub mod hand;
 pub mod mana_cost;
 pub mod mulligan;

@@ -1,4 +1,5 @@
 use crate::card::*;
+use crate::data::*;
 use crate::mana_cost::parse_mana_costs;
 use crate::scryfall::{GameFormat, Rarity, SetCode};
 use regex::Regex;
@@ -226,7 +227,7 @@ impl Deck {
         .trim()
         .to_string();
       // Find the card from the name, and clone it so we can apply card modifiers
-      let mut card = ALL_CARDS
+      let mut card = ORACLE_CARDS
         .card_from_name(&left_card_name)
         .ok_or_else(|| DeckcodeError(format!("Cannot find card named \"{}\" in collection", name)))?
         .clone();

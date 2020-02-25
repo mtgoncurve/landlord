@@ -122,7 +122,6 @@ impl Simulation {
 
 #[cfg(test)]
 mod tests {
-  use crate::card::*;
   use crate::deck::*;
   use crate::mulligan::Never;
   use crate::simulation::*;

@@ -1,10 +1,8 @@
 //! # Card representation and deck list parsing
 //!
 use crate::mana_cost::*;
-use flate2::read::GzDecoder;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::io::prelude::*;
 
 // TODO Rethink including these in the Card definition
 pub use crate::scryfall::*;
@@ -149,18 +147,6 @@ impl CardKind {
 }
 
 impl Collection {
-    /// Returns a new collection of all cards from data/all_cards.landlord
-    pub fn all() -> Result<Self, bincode::Error> {
-        // NOTE(jshrake): This file is generated!
-        // Run scryfall2landlord to generate this file
-        // See the `make card-update` task in the top-level Makefile
-        let b = include_bytes!("../../data/oracle_cards.landlord");
-        let mut gz = GzDecoder::new(&b[..]);
-        let mut s: Vec<u8> = Vec::new();
-        gz.read_to_end(&mut s).expect("gz decode failed");
-        bincode::deserialize(&s)
-    }
-
     pub fn group_by_name<'a>(&'a self) -> HashMap<&'a String, Vec<&'a Card>> {
         let mut m = HashMap::new();
         for card in &self.cards {
@@ -264,14 +250,10 @@ impl Collection {
     }
 }
 
-lazy_static! {
-    pub static ref ALL_CARDS: Collection = Collection::all().expect("Collection::all() failed");
-}
-
 #[macro_export]
 macro_rules! card {
     ($card_name:expr) => {
-        ALL_CARDS
+        $crate::data::ORACLE_CARDS
             .card_from_name($card_name)
             .unwrap_or_else(|| panic!("Cannot find card named \"{}\"", $card_name))
     };
@@ -280,19 +262,6 @@ macro_rules! card {
 #[cfg(test)]
 mod tests {
     use crate::card::*;
-
-    #[test]
-    fn all_cards_have_non_empty_image_uri() {
-        let any_empty_image_uri = ALL_CARDS.cards.iter().any(|c| c.image_uri.is_empty());
-        assert_eq!(any_empty_image_uri, false);
-    }
-
-    #[test]
-    fn all_cards_have_unique_names() {
-        let mut deduped = ALL_CARDS.clone();
-        deduped.cards.dedup();
-        assert_eq!(deduped.cards.len(), ALL_CARDS.cards.len());
-    }
 
     #[test]
     fn card_field_of_ruin() {
