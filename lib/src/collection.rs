@@ -8,19 +8,6 @@ use std::ops::Deref;
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Collection {
   pub cards: Vec<Card>,
-  sort: CollectionSort,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum CollectionSort {
-  Name,
-  ArenaId,
-}
-
-impl Default for CollectionSort {
-  fn default() -> Self {
-    Self::Name
-  }
 }
 
 impl Collection {
@@ -84,42 +71,15 @@ impl Collection {
     // sort for binary_search used in card_from_name
     // note that Card implements Ord by
     cards.sort();
-    Self {
-      cards,
-      sort: CollectionSort::Name,
-    }
-  }
-
-  pub fn sort_by_arena_id(mut self) -> Self {
-    self.cards.sort_unstable_by_key(|c| c.arena_id);
-    self.sort = CollectionSort::ArenaId;
-    self
-  }
-
-  pub fn sort_by_name(mut self) -> Self {
-    self.cards.sort();
-    self.sort = CollectionSort::Name;
-    self
+    Self { cards }
   }
 
   /// Returns a card from the card name
-  #[inline]
   pub fn card_from_name(&self, name: &str) -> Option<&Card> {
-    assert_eq!(self.sort, CollectionSort::Name);
     let name_lowercase = name.to_lowercase();
     let res = self
       .cards
       .binary_search_by(|probe| probe.name.to_lowercase().cmp(&name_lowercase));
-    res.map(|idx| &self.cards[idx]).ok()
-  }
-
-  /// Returns a card from the arena id
-  #[inline]
-  pub fn card_from_arena_id(&self, arena_id: u64) -> Option<&Card> {
-    assert_eq!(self.sort, CollectionSort::ArenaId);
-    let res = self
-      .cards
-      .binary_search_by(|probe| probe.arena_id.cmp(&arena_id));
     res.map(|idx| &self.cards[idx]).ok()
   }
 }

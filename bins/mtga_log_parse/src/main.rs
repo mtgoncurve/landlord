@@ -58,9 +58,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Opening log file @ {:?}", log_path);
     let log_string = std::fs::read_to_string(log_path.as_path())?;
     let log = Log::from_str(&log_string)?;
-    let all_cards = all_cards()?.sort_by_arena_id();
-    let scryfall_id_lookup = all_cards.group_by_id();
-    let name_lookup = all_cards.group_by_name();
+    let id_lookup = ALL_CARDS.group_by_id();
+    let name_lookup = ALL_CARDS.group_by_name();
 
     let mut builder = DeckBuilder::new();
 
@@ -71,15 +70,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let id = &id_name.0;
                 let name = &id_name.1;
                 if !id.is_empty() {
-                    let mut card =
-                        Card::clone(scryfall_id_lookup.get(id).expect("id lookup must work"));
+                    let mut card = Card::clone(id_lookup.get(id).expect("id lookup must work"));
                     // Ugh. We found the card but it might have a weird name (like the adventure cards)
                     // whatever. search again via a name_lookup and just take the first entry...
                     if &card.name != name {
+                        debug!(
+                            "Found card by id w/ name \"{}\", but expected \"{}\"",
+                            card.name, name
+                        );
                         card = Card::clone(
                             name_lookup
                                 .get(name)
-                                .expect("name lookup must woork")
+                                .expect("name lookup must work")
                                 .first()
                                 .expect("nothing"),
                         );
