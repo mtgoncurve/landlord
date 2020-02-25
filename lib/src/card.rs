@@ -37,6 +37,8 @@ pub struct Card {
     pub rarity: Rarity,
     /// Card release set code
     pub set: SetCode,
+    /// True if this card is a sub face
+    pub is_face: bool,
 }
 
 /// CardKind represents an internal card type representation.
