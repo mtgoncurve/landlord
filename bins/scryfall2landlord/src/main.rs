@@ -76,6 +76,8 @@ fn main() -> Result<(), Error> {
             face.set = card.set;
             face.oracle_id = card.oracle_id.clone();
             face.id = card.id.clone();
+            face.rarity = card.rarity;
+            face.collector_number = card.collector_number.clone();
             card_faces.push(face);
         }
     }

@@ -79,7 +79,7 @@ impl Deck {
     self
       .cards
       .iter()
-      .filter(|cc| cc.card.rarity == Rarity::Common)
+      .filter(|cc| cc.card.rarity == Rarity::Common && cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count)
   }
 
@@ -87,7 +87,7 @@ impl Deck {
     self
       .cards
       .iter()
-      .filter(|cc| cc.card.rarity == Rarity::Uncommon)
+      .filter(|cc| cc.card.rarity == Rarity::Uncommon && cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count)
   }
 
@@ -95,7 +95,7 @@ impl Deck {
     self
       .cards
       .iter()
-      .filter(|cc| cc.card.rarity == Rarity::Rare)
+      .filter(|cc| cc.card.rarity == Rarity::Rare && cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count)
   }
 
@@ -103,7 +103,7 @@ impl Deck {
     self
       .cards
       .iter()
-      .filter(|cc| cc.card.rarity == Rarity::Mythic)
+      .filter(|cc| cc.card.rarity == Rarity::Mythic && cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count)
   }
 
@@ -120,6 +120,55 @@ impl Deck {
       .filter(|cc| cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count);
     sum as f64 / non_basic_land_count as f64
+  }
+
+  pub fn mana_counts(&self) -> ManaColorCount {
+    let mut mcc = ManaColorCount::new();
+    for cc in &self.cards {
+      for _ in 0..cc.count {
+        mcc.count(&cc.card.mana_cost);
+      }
+    }
+    mcc
+  }
+
+  pub fn mana_counts_for_lands(&self) -> ManaColorCount {
+    let mut mcc = ManaColorCount::new();
+    for cc in &self.cards {
+      if !cc.card.is_land() {
+        continue;
+      }
+      for _ in 0..cc.count {
+        mcc.count(&cc.card.mana_cost);
+      }
+    }
+    mcc
+  }
+
+  pub fn mana_counts_for_nonlands(&self) -> ManaColorCount {
+    let mut mcc = ManaColorCount::new();
+    for cc in &self.cards {
+      if cc.card.is_land() {
+        continue;
+      }
+      for _ in 0..cc.count {
+        mcc.count(&cc.card.mana_cost);
+      }
+    }
+    mcc
+  }
+
+  pub fn mana_counts_for_craftables(&self) -> ManaColorCount {
+    let mut mcc = ManaColorCount::new();
+    for cc in &self.cards {
+      if cc.card.kind == CardKind::BasicLand {
+        continue;
+      }
+      for _ in 0..cc.count {
+        mcc.count(&cc.card.mana_cost);
+      }
+    }
+    mcc
   }
 
   pub fn from_cards<I>(cards: I) -> Self

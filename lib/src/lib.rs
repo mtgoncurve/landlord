@@ -31,5 +31,10 @@ pub mod prelude;
 pub mod scryfall;
 pub mod simulation;
 
+// mtgoncurve.com
 mod mtgoncurve;
 pub use crate::mtgoncurve::run;
+
+// mtgawildspend.com
+mod mtgawildspend;
+pub use crate::mtgawildspend::mtgawildspend_run;
