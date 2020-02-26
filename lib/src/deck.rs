@@ -342,6 +342,26 @@ impl Deck {
     }
     res.concat()
   }
+
+  pub fn have_need(&self, collection: &Deck) -> (Deck, Deck) {
+    let mut have = DeckBuilder::new();
+    let mut need = DeckBuilder::new();
+    for need_cc in &self.cards {
+      let need_card = &need_cc.card;
+      let need_count = need_cc.count;
+      let need_name = &need_card.name;
+      let have_cc = collection.card_count_from_name(need_name);
+      let have_count = std::cmp::min(have_cc.map(|o| o.count).unwrap_or(0), need_count);
+      let diff_count = need_count - have_count;
+      if diff_count == 0 {
+        have = have.insert_count(need_card.clone(), need_count);
+      } else {
+        have = have.insert_count(need_card.clone(), have_count);
+        need = need.insert_count(need_card.clone(), diff_count);
+      }
+    }
+    (have.build(), need.build())
+  }
 }
 
 impl Deref for Deck {

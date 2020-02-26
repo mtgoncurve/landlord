@@ -1,3 +1,4 @@
+use crate::arena::Log;
 use crate::card::ManaColorCount;
 use crate::data::*;
 use crate::deck::Deck;
@@ -14,6 +15,7 @@ extern "C" {
 #[derive(Debug, Serialize, Deserialize)]
 enum Error {
   BadDate,
+  BadArenaLog,
   BadCollection,
 }
 
@@ -21,6 +23,7 @@ enum Error {
 #[derive(Debug, Serialize, Deserialize)]
 struct Output {
   pub decks: Vec<DeckInfo>,
+  pub cards_in_collection: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,8 +63,8 @@ impl DeckResult {
 }
 
 #[wasm_bindgen]
-pub fn mtgawildspend_run(today_str: &str, collection: &str) -> JsValue {
-  let result = match run_impl(today_str, collection) {
+pub fn mtgfrugal_run(today_str: &str, arena_log: &str) -> JsValue {
+  let result = match run_impl(today_str, arena_log) {
     Err(e) => {
       return JsValue::from_str(&format!("Error running simulation for input: {:#?}", e));
     }
@@ -70,15 +73,20 @@ pub fn mtgawildspend_run(today_str: &str, collection: &str) -> JsValue {
   JsValue::from_serde(&result).expect("this can't fail")
 }
 
-fn run_impl(today_str: &str, _collection: &str) -> Result<Output, Error> {
+fn run_impl(today_str: &str, arena_log: &str) -> Result<Output, Error> {
   let today = Date::parse(today_str, "%F").map_err(|_| Error::BadDate)?;
+  let log = Log::from_str(arena_log).map_err(|_| Error::BadArenaLog)?;
+  let collection = log.collection().map_err(|_| Error::BadCollection)?;
   let mut results = Vec::new();
   for deck in NET_DECKS.iter() {
     let d = DeckResult::from_deck(deck, today);
+    let (have, need) = deck.have_need(&collection);
+    let h = DeckResult::from_deck(&have, today);
+    let n = DeckResult::from_deck(&need, today);
     results.push(DeckInfo {
       deck: d,
-      need: None,
-      have: None,
+      have: Some(h),
+      need: Some(n),
     })
   }
   results.sort_unstable_by(|a, b| {
@@ -87,5 +95,20 @@ fn run_impl(today_str: &str, _collection: &str) -> Result<Output, Error> {
       .partial_cmp(&a.deck.days_remaining)
       .unwrap()
   });
-  Ok(Output { decks: results })
+  Ok(Output {
+    decks: results,
+    cards_in_collection: collection.len(),
+  })
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::arena::*;
+  #[test]
+  fn test_js_string() {
+    let arena_log = include_str!("out_log.txt");
+    let log = Log::from_str(arena_log).expect("log from str ok");
+    let collection = log.collection().expect("collection ok");
+    assert!(collection.len() != 0);
+  }
 }
