@@ -17,6 +17,8 @@ extern crate regex;
 extern crate wasm_bindgen;
 #[macro_use]
 extern crate time;
+#[macro_use]
+extern crate log;
 
 pub mod arena;
 #[macro_use]
@@ -36,5 +38,5 @@ mod mtgoncurve;
 pub use crate::mtgoncurve::run;
 
 // mtgawildspend.com
-mod mtgawildspend;
-pub use crate::mtgawildspend::mtgawildspend_run;
+mod mtgfrugal;
+pub use crate::mtgfrugal::mtgfrugal_run;
