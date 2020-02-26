@@ -1,7 +1,7 @@
 //! # https://mtgoncurve.com interface
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
-use crate::card::{Card, CardKind, ManaCost};
+use crate::card::{Card, CardKind, ManaColorCount, ManaCost};
 use crate::data::ORACLE_CARDS;
 use crate::deck::Deck;
 use crate::mulligan::London;
@@ -54,6 +54,14 @@ struct Output {
     pub non_land_counts: ManaColorCount,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct CardObservation {
+    card: MtgOnCurveCard,
+    cmc: u8,
+    card_count: usize,
+    observations: Observations,
+}
+
 #[derive(Default, Debug, Serialize, Deserialize)]
 struct MtgOnCurveCard {
     /// String representing the card name
@@ -84,35 +92,6 @@ impl From<&Card> for MtgOnCurveCard {
             mana_cost: card.mana_cost,
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CardObservation {
-    card: MtgOnCurveCard,
-    cmc: u8,
-    card_count: usize,
-    observations: Observations,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ManaColorCount {
-    pub total: usize, // sum of all the below
-    pub c_count: usize,
-    pub w_count: usize,
-    pub u_count: usize,
-    pub b_count: usize,
-    pub r_count: usize,
-    pub g_count: usize,
-    pub wu_count: usize, // azorius
-    pub wb_count: usize, // orzhov
-    pub ub_count: usize, // dimir
-    pub ur_count: usize, // izzet
-    pub br_count: usize, // rakdos
-    pub bg_count: usize, // golgari
-    pub rg_count: usize, // gruul
-    pub rw_count: usize, // boros
-    pub gw_count: usize, // selesnya
-    pub gu_count: usize, // simic
 }
 
 /// Runs a simulation given input
@@ -150,7 +129,6 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         return Err(Error::EmptyDeckcode);
     }
     let highest_turn = deck
-        .cards
         .iter()
         .fold(0, |max, c| std::cmp::max(max, c.card.turn as usize));
     let mut mulligan = London::never();
@@ -181,7 +159,6 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
     outputs.accumulated_opening_hand_land_count = sim.accumulated_opening_hand_land_count;
 
     outputs.card_observations = deck
-        .cards
         .iter()
         .filter(|c| !c.card.is_land())
         .map(|c| {
@@ -206,7 +183,6 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .sort_by(|a, b| a.card.mana_cost.cmc().cmp(&b.card.mana_cost.cmc()));
 
     outputs.land_counts = deck
-        .cards
         .iter()
         .filter(|c| c.card.is_land())
         .map(|c| {
@@ -234,21 +210,19 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         0.0
     } else {
         let n = deck
-            .cards
             .iter()
             .filter(|c| !c.card.is_land())
             .fold(0, |accum, c| accum + c.count);
-        deck.cards
-            .iter()
+        deck.iter()
             .filter(|c| !c.card.is_land())
             .map(|c| c.count * (c.card.mana_cost.cmc() as usize))
             .sum::<usize>() as f64
             / n as f64
     };
 
-    for c in &deck.cards {
-        for _ in 0..c.count {
-            let card = &c.card;
+    for cc in deck.iter() {
+        for _ in 0..cc.count {
+            let card = &cc.card;
             if card.is_land() {
                 outputs.total_land_counts.count(&card.mana_cost);
             }
@@ -263,75 +237,6 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         }
     }
     Ok(outputs)
-}
-
-impl ManaColorCount {
-    pub fn new() -> Self {
-        Self {
-            total: 0,
-
-            b_count: 0,
-            u_count: 0,
-            g_count: 0,
-            r_count: 0,
-            w_count: 0,
-            c_count: 0,
-
-            wu_count: 0,
-            wb_count: 0,
-            ub_count: 0,
-            ur_count: 0,
-            br_count: 0,
-            bg_count: 0,
-            rg_count: 0,
-            rw_count: 0,
-            gw_count: 0,
-            gu_count: 0,
-        }
-    }
-
-    fn count(&mut self, card: &ManaCost) {
-        self.total += 1;
-        self.u_count += card.u as usize;
-        self.r_count += card.r as usize;
-        self.b_count += card.b as usize;
-        self.g_count += card.g as usize;
-        self.w_count += card.w as usize;
-        self.c_count += card.c as usize;
-        match (card.r, card.g, card.b, card.u, card.w) {
-            (1, 1, 0, 0, 0) => {
-                self.rg_count += 1;
-            }
-            (1, 0, 1, 0, 0) => {
-                self.br_count += 1;
-            }
-            (1, 0, 0, 1, 0) => {
-                self.ur_count += 1;
-            }
-            (1, 0, 0, 0, 1) => {
-                self.rw_count += 1;
-            }
-            (0, 1, 1, 0, 0) => {
-                self.bg_count += 1;
-            }
-            (0, 1, 0, 1, 0) => {
-                self.gu_count += 1;
-            }
-            (0, 1, 0, 0, 1) => {
-                self.gw_count += 1;
-            }
-            (0, 0, 1, 1, 0) => {
-                self.ub_count += 1;
-            }
-            (0, 0, 1, 0, 1) => {
-                self.wb_count += 1;
-            }
-            (0, 0, 0, 1, 1) => {
-                self.wu_count += 1;
-            }
-            _ => {}
-        }
-    }
 }
 
 impl Default for ManaColorCount {

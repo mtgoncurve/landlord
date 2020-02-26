@@ -17,6 +17,8 @@ pub struct ScryfallCard {
   #[serde(default)]
   pub oracle_text: String,
   #[serde(default)]
+  pub collector_number: String,
+  #[serde(default)]
   pub type_line: String,
   #[serde(default)]
   pub color_identity: HashSet<ManaColor>,
@@ -80,7 +82,7 @@ pub enum GameFormat {
   Other,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Rarity {
   Common,
@@ -362,6 +364,7 @@ impl Into<Card> for ScryfallCard {
       name,
       id: self.id,
       oracle_id: self.oracle_id,
+      collector_number: self.collector_number,
       hash,
       mana_cost_string: self.mana_cost,
       image_uri,
