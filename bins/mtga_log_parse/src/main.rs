@@ -39,7 +39,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log = Log::from_str(&log_string)?;
     let collection = log.collection().expect("error parsing collection from log");
     let today = OffsetDateTime::now_local().date();
+    info!("Mythic wild cards {}", log.wc_mythic_count());
+    info!("Rare wild cards {}", log.wc_rare_count());
+    info!("Uncommon wild cards {}", log.wc_uncommon_count());
+    info!("Common wild cards {}", log.wc_common_count());
+    info!("Gems {}", log.gems());
+    info!("Gold {}", log.gold());
     let mut decks = net_decks()?;
+    decks.extend(log.player_decks().unwrap());
     {
         let mut ranked = Vec::new();
         for (i, deck) in decks.iter_mut().enumerate() {
@@ -50,14 +57,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         for (i, time_left) in ranked {
             let deck = &decks[i];
             let title = deck.title.as_ref().unwrap();
-            let url = deck.url.as_ref().unwrap();
+            let url = &deck.url;
             let (_have, need) = deck.have_need(&collection);
             info!("----------------------");
             info!(
                 "{} average number of days remaining in standard: {}",
                 title, time_left,
             );
-            info!("{}", url);
+            info!("{:?}", url);
             info!(
                 "Price: mythic {:02} // rare {:02} // uncommon {:02} // common {:02}",
                 deck.mythic_count(),
