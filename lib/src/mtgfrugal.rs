@@ -24,6 +24,12 @@ enum Error {
 struct Output {
   pub decks: Vec<DeckInfo>,
   pub cards_in_collection: usize,
+  pub wc_mythic: usize,
+  pub wc_rare: usize,
+  pub wc_uncommon: usize,
+  pub wc_common: usize,
+  pub gems: usize,
+  pub gold: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,5 +104,11 @@ fn run_impl(today_str: &str, arena_log: &str) -> Result<Output, Error> {
   Ok(Output {
     decks: results,
     cards_in_collection: collection.len(),
+    wc_mythic: log.wc_mythic_count(),
+    wc_rare: log.wc_rare_count(),
+    wc_uncommon: log.wc_uncommon_count(),
+    wc_common: log.wc_common_count(),
+    gems: log.gems(),
+    gold: log.gold(),
   })
 }
