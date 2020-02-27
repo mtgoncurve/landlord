@@ -100,15 +100,3 @@ fn run_impl(today_str: &str, arena_log: &str) -> Result<Output, Error> {
     cards_in_collection: collection.len(),
   })
 }
-
-#[cfg(test)]
-mod tests {
-  use crate::arena::*;
-  #[test]
-  fn test_js_string() {
-    let arena_log = include_str!("out_log.txt");
-    let log = Log::from_str(arena_log).expect("log from str ok");
-    let collection = log.collection().expect("collection ok");
-    assert!(collection.len() != 0);
-  }
-}

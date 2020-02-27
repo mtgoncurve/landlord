@@ -8,14 +8,37 @@ use std::fmt;
 use std::io::BufRead;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct GetPlayerCardsV3Payload {
+pub struct GetPlayerCardsV3 {
   id: u64,
   payload: HashMap<String, usize>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct GetPlayerInventory {
+  id: u64,
+  payload: GetPlayerInventoryPayload,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct GetPlayerInventoryPayload {
+  #[serde(rename = "wcCommon", default)]
+  wc_common_count: usize,
+  #[serde(rename = "wcUncommon", default)]
+  wc_uncommon_count: usize,
+  #[serde(rename = "wcRare", default)]
+  wc_rare_count: usize,
+  #[serde(rename = "wcMythic", default)]
+  wc_mythic_count: usize,
+  #[serde(default)]
+  gems: usize,
+  #[serde(default)]
+  gold: usize,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Log {
-  player_cards_payload: Option<GetPlayerCardsV3Payload>,
+  player_cards: Option<GetPlayerCardsV3>,
+  player_inventory: Option<GetPlayerInventory>,
 }
 
 #[derive(Debug)]
@@ -46,23 +69,69 @@ impl Log {
     lazy_static! {
         //https://regex101.com/r/OluNfe/3
         static ref GET_PLAYER_CARDS_V3_REGEX : Regex =
-            Regex::new(r"^.*<== PlayerInventory.GetPlayerCardsV3\s?(?P<payload>.*)")
+            Regex::new(r"^.*<== PlayerInventory.GetPlayerCardsV3\s+(?P<data>.*)")
                 .expect("Failed to compile GET_PLAYER_CARDS_V3_REGEX");
+          static ref GET_PLAYER_INVENTORY_REGEX : Regex =
+            Regex::new(r"^.*<== PlayerInventory.GetPlayerInventory\s+(?P<data>.*)")
+            .expect("Failed to compile GET_PLAYER_INVENTORY_REGEX");
     }
     let cursor = std::io::Cursor::new(log);
     let lines_iter = cursor.lines().map(|l| l.unwrap());
-    let mut collections: Vec<GetPlayerCardsV3Payload> = Vec::new();
+    let mut player_cards: Vec<GetPlayerCardsV3> = Vec::new();
+    let mut player_inventory: Vec<GetPlayerInventory> = Vec::new();
     for line in lines_iter {
       if let Some(caps) = GET_PLAYER_CARDS_V3_REGEX.captures(&line) {
-        let payload = &caps["payload"];
-        if let Ok(payload) = serde_json::from_str(payload) {
-          collections.push(payload);
+        let data = &caps["data"];
+        if let Ok(data) = serde_json::from_str(data) {
+          player_cards.push(data);
+        }
+      } else if let Some(caps) = GET_PLAYER_INVENTORY_REGEX.captures(&line) {
+        let data = &caps["data"];
+        if let Ok(data) = serde_json::from_str(data) {
+          player_inventory.push(data);
         }
       }
     }
     Ok(Self {
-      player_cards_payload: collections.last().map(|c| c.clone()),
+      player_cards: player_cards.last().map(|c| c.clone()),
+      player_inventory: player_inventory.last().map(|c| c.clone()),
     })
+  }
+
+  pub fn wc_common_count(&self) -> usize {
+    self
+      .player_inventory
+      .map(|o| o.payload.wc_common_count)
+      .unwrap_or(0)
+  }
+
+  pub fn wc_uncommon_count(&self) -> usize {
+    self
+      .player_inventory
+      .map(|o| o.payload.wc_uncommon_count)
+      .unwrap_or(0)
+  }
+
+  pub fn wc_rare_count(&self) -> usize {
+    self
+      .player_inventory
+      .map(|o| o.payload.wc_rare_count)
+      .unwrap_or(0)
+  }
+
+  pub fn wc_mythic_count(&self) -> usize {
+    self
+      .player_inventory
+      .map(|o| o.payload.wc_mythic_count)
+      .unwrap_or(0)
+  }
+
+  pub fn gems(&self) -> usize {
+    self.player_inventory.map(|o| o.payload.gems).unwrap_or(0)
+  }
+
+  pub fn gold(&self) -> usize {
+    self.player_inventory.map(|o| o.payload.gold).unwrap_or(0)
   }
 
   pub fn collection(&self) -> Result<Deck, LogError> {
@@ -73,8 +142,8 @@ impl Log {
     }
 
     let mut builder = DeckBuilder::new();
-    if let Some(player_cards_payload) = &self.player_cards_payload {
-      for (arena_id_str, count) in &player_cards_payload.payload {
+    if let Some(player_cards) = &self.player_cards {
+      for (arena_id_str, count) in &player_cards.payload {
         let arena_id = arena_id_str.parse::<u64>().expect("parse to u64 works");
         if let Some(id_name) = ARENA_2_SCRYFALL.get(&arena_id) {
           let id = &id_name.0;
