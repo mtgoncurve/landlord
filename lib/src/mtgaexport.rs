@@ -35,7 +35,7 @@ pub fn mtgaexport_run(arena_log: &str) -> JsValue {
 fn mtgaexport_run_impl(arena_log: &str) -> Result<Output, Error> {
   let log = Log::from_str(arena_log).map_err(|_| Error::BadArenaLog)?;
   let collection = log.collection().map_err(|_| Error::BadCollection)?;
-  let mtggoldfish_header = "Card,Set ID,Set Name,Quantity,Foil";
+  let mtggoldfish_header = "Card,Set ID,Set Name,Quantity,Foil\n";
   let mut mtggoldfish_string =
     String::with_capacity(collection.len() * (3 + 3 + 1 + 1 + 20 + mtggoldfish_header.len())); // 3 comma, 3 letters for set code, 1 for the count, 1 for the newline, 20 for the name
   mtggoldfish_string.push_str(mtggoldfish_header);
