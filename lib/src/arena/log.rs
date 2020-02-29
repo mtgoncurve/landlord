@@ -95,13 +95,13 @@ impl Log {
     lazy_static! {
         //https://regex101.com/r/OluNfe/3
         static ref GET_PLAYER_CARDS_V3_REGEX : Regex =
-            Regex::new(r"^.*<== PlayerInventory.GetPlayerCardsV3\s+(?P<data>.*)")
+            Regex::new(r"<== PlayerInventory.GetPlayerCardsV3 (?P<data>.*)")
                 .expect("Failed to compile GET_PLAYER_CARDS_V3_REGEX");
           static ref GET_PLAYER_INVENTORY_REGEX : Regex =
-            Regex::new(r"^.*<== PlayerInventory.GetPlayerInventory\s+(?P<data>.*)")
+            Regex::new(r"<== PlayerInventory.GetPlayerInventory (?P<data>.*)")
             .expect("Failed to compile GET_PLAYER_INVENTORY_REGEX");
           static ref GET_DECK_LISTS_V3_REGEX: Regex =
-            Regex::new(r"^.*<== Deck.GetDeckListsV3\s+(?P<data>.*)")
+            Regex::new(r"<== Deck.GetDeckListsV3 (?P<data>.*)")
             .expect("Failed to compile GET_DECK_LISTS_V3_REGEX");
     }
     let cursor = std::io::Cursor::new(log);
