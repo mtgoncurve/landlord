@@ -46,7 +46,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Gems {}", log.gems());
     info!("Gold {}", log.gold());
     let mut decks = net_decks()?;
-    //decks.extend(log.player_decks().unwrap());
+    decks.extend(log.player_decks().unwrap());
     {
         let mut ranked = Vec::new();
         for (i, deck) in decks.iter_mut().enumerate() {
@@ -59,8 +59,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let title = deck.title.as_ref().unwrap();
             let url = &deck.url;
             let (_have, need) = deck.have_need(&collection);
-            info!("[{}]({}): {:.0}", title, url.as_ref().unwrap(), time_left,);
-            /*
+            info!(
+                "-[{}]({:?}): {:.0}",
+                title,
+                url.as_ref().unwrap_or(&"".to_string()),
+                time_left
+            );
             info!(
                 "Price: mythic {:02} // rare {:02} // uncommon {:02} // common {:02}",
                 deck.mythic_count(),
@@ -87,7 +91,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "\tAverage days remaining: {}",
                 need.average_time_remaining_in_standard(today)
             );
-            */
         }
     }
 
@@ -101,20 +104,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let count = card_count.entry(&cc.card).or_insert(0);
             *count += 1; //cc.count;
         }
-    }
-
-    info!("~~~~~~~");
-    info!("Cards ranked by occurences in unique decks");
-    info!("~~~~~~~");
-    let mut card_count_ranked: Vec<_> = card_count.iter().map(|(k, v)| (k, v)).collect();
-    card_count_ranked.sort_by_key(|k| k.1);
-    for k in &card_count_ranked {
-        info!(
-            "{} {}, days remaining: {}",
-            k.1,
-            k.0.name,
-            k.0.set.time_remaining_in_standard(today).whole_days()
-        );
     }
     Ok(())
 }
