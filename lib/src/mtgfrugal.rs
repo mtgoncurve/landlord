@@ -6,12 +6,6 @@ use time::Date;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
-// Import the `window.alert` function from the Web.
-#[wasm_bindgen]
-extern "C" {
-  fn alert(s: &str);
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 enum Error {
   BadDate,
@@ -67,6 +61,17 @@ impl DeckResult {
     }
   }
 }
+
+/*
+#[wasm_bindgen]
+pub fn arena_log_parse(arena_log: &str) -> JsValue {
+  let log = Log::from_str(arena_log);
+  match log {
+    Err(_) => JsValue::from_str(&format!("Error parsing log file")),
+    Ok(v) => JsValue::from_serde(&v).expect("ok"),
+  }
+}
+*/
 
 #[wasm_bindgen]
 pub fn mtgfrugal_run(today_str: &str, arena_log: &str) -> JsValue {
