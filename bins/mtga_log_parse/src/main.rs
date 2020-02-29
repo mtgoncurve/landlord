@@ -46,25 +46,21 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Gems {}", log.gems());
     info!("Gold {}", log.gold());
     let mut decks = net_decks()?;
-    decks.extend(log.player_decks().unwrap());
+    //decks.extend(log.player_decks().unwrap());
     {
         let mut ranked = Vec::new();
         for (i, deck) in decks.iter_mut().enumerate() {
             let time_left = deck.average_time_remaining_in_standard(today);
             ranked.push((i, time_left));
         }
-        ranked.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
         for (i, time_left) in ranked {
             let deck = &decks[i];
             let title = deck.title.as_ref().unwrap();
             let url = &deck.url;
             let (_have, need) = deck.have_need(&collection);
-            info!("----------------------");
-            info!(
-                "{} average number of days remaining in standard: {}",
-                title, time_left,
-            );
-            info!("{:?}", url);
+            info!("[{}]({}): {:.0}", title, url.as_ref().unwrap(), time_left,);
+            /*
             info!(
                 "Price: mythic {:02} // rare {:02} // uncommon {:02} // common {:02}",
                 deck.mythic_count(),
@@ -91,6 +87,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "\tAverage days remaining: {}",
                 need.average_time_remaining_in_standard(today)
             );
+            */
         }
     }
 

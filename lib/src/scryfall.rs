@@ -162,6 +162,12 @@ impl std::str::FromStr for SetCode {
   }
 }
 
+impl std::fmt::Display for SetCode {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+
 impl SetCode {
   pub fn in_standard(&self) -> bool {
     match self {

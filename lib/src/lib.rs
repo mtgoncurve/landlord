@@ -35,8 +35,11 @@ pub mod simulation;
 
 // mtgoncurve.com
 mod mtgoncurve;
-pub use crate::mtgoncurve::run;
+pub use crate::mtgoncurve::mtgoncurve_run;
 
 // mtgawildspend.com
 mod mtgfrugal;
 pub use crate::mtgfrugal::mtgfrugal_run;
+
+mod mtgaexport;
+pub use crate::mtgaexport::mtgaexport_run;

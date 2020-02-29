@@ -104,7 +104,7 @@ impl From<&Card> for MtgOnCurveCard {
 ///  console.log(output);
 ///  ```
 #[wasm_bindgen]
-pub fn run(input: &JsValue) -> JsValue {
+pub fn mtgoncurve_run(input: &JsValue) -> JsValue {
     let input: Input = match input.into_serde() {
         Err(e) => {
             return JsValue::from_str(&format!("Error deserializing simulation inputs: {:#?}", e));
