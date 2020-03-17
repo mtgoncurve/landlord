@@ -272,6 +272,10 @@ lazy_static! {
             "Wooded Foothills",
             ManaCost::from_rgbuwc(1, 1, 0, 0, 0, 0)
         ),
+        (
+            "Fabled Passage",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
     ]
     .iter()
     .copied()

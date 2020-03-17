@@ -635,10 +635,9 @@ mod tests {
       3 Plains (XLN) 262
       4 Deafening Clarion (GRN) 165
       4 Steam Vents (GRN) 257
-      4 Fabled Passage (ELD) 244
-      1 Field of Ruin (THB) 242
+      4 Field of Ruin (THB) 242
       2 Castle Vantress (ELD) 242
-      3 Island (THB) 251
+      4 Island (THB) 251
       3 Mountain (THB) 285
       4 Teferi, Time Raveler (WAR) 221
       ";
