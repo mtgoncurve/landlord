@@ -33,14 +33,14 @@ impl DeckBuilder {
   }
 
   pub fn insert(mut self, mut card: Card) -> Self {
-    card.name = card.name.to_lowercase();
+    card.name = card.name.clone();
     let total_count = self.cards.entry(card).or_insert(0);
     *total_count += 1;
     Self { cards: self.cards }
   }
 
   pub fn insert_count(mut self, mut card: Card, count: usize) -> Self {
-    card.name = card.name.to_lowercase();
+    card.name = card.name.clone();
     let total_count = self.cards.entry(card).or_insert(0);
     *total_count += count;
     Self { cards: self.cards }
@@ -200,7 +200,7 @@ impl Deck {
     let name_lowercase = name.to_lowercase();
     let res = self
       .cards
-      .binary_search_by(|probe| probe.card.name.cmp(&name_lowercase));
+      .binary_search_by(|probe| probe.card.name.to_lowercase().cmp(&name_lowercase));
     res.map(|idx| &self.cards[idx]).ok()
   }
 
@@ -325,7 +325,6 @@ impl Deck {
         })?;
         card.turn += turn_val;
       }
-      card.name = name;
       card.set = set;
       builder = builder.insert_count(card, amount);
     }
