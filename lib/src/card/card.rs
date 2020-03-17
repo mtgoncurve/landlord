@@ -239,6 +239,19 @@ mod tests {
     }
 
     #[test]
+    fn card_fabled_passage() {
+        let card = card!("Fabled Passage");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.kind, CardKind::OtherLand);
+        assert_eq!(card.mana_cost.b, 1);
+        assert_eq!(card.mana_cost.u, 1);
+        assert_eq!(card.mana_cost.g, 1);
+        assert_eq!(card.mana_cost.r, 1);
+        assert_eq!(card.mana_cost.w, 1);
+        assert_eq!(card.mana_cost.c, 0);
+    }
+
+    #[test]
     fn card_guildmage_forum() {
         let card = card!("Guildmages' Forum");
         assert_eq!(card.is_land(), true);
