@@ -70,7 +70,7 @@ impl Collection {
   pub fn from_cards(mut cards: Vec<Card>) -> Self {
     // sort for binary_search used in card_from_name
     // note that Card implements Ord by
-    cards.sort();
+    cards.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Self { cards }
   }
 
