@@ -24,7 +24,7 @@ impl Vancouver {
 }
 
 impl Mulligan for Vancouver {
-  fn simulate_hand(&self, mut _rng: &mut impl Rng, _deck: &[Card], _draws: usize) -> Hand {
+  fn simulate_hand(&self, mut _rng: &mut impl Rng, _deck: &[&Card], _draws: usize) -> Hand {
     unimplemented!();
   }
 }

@@ -3,3 +3,4 @@ lib/pkg
 lib/LICENSE
 lib/README.md
 scryfall-oracle*.json
+arena-data
