@@ -32,7 +32,7 @@ impl Default for Never {
 }
 
 impl Mulligan for Never {
-  fn simulate_hand(&self, mut rng: &mut impl Rng, deck: &[Card], draws: usize) -> Hand {
+  fn simulate_hand(&self, mut rng: &mut impl Rng, deck: &[&Card], draws: usize) -> Hand {
     // We need to draw our starting hand size +  the number of draws specified, capped by the deck_len
     let deck_len = deck.len();
     let cards_to_draw = std::cmp::min(deck_len, self.starting_hand_size + draws);
@@ -42,7 +42,7 @@ impl Mulligan for Never {
       .partial_shuffle(&mut rng, cards_to_draw)
       .0
       .iter()
-      .map(|i| &deck[*i])
+      .map(|i| deck[*i])
       .collect();
     return Hand::from_opening_and_draws(
       &shuffled_deck[..starting_hand_size],

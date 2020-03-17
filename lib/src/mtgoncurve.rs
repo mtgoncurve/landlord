@@ -1,7 +1,9 @@
 //! # https://mtgoncurve.com interface
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
-use crate::card::{Card, CardKind, ManaCost, ALL_CARDS};
+use crate::card::{Card, CardKind, ManaColorCount, ManaCost};
+use crate::data::ORACLE_CARDS;
+use crate::deck::Deck;
 use crate::mulligan::London;
 use crate::simulation::{Observations, Simulation, SimulationConfig};
 
@@ -54,31 +56,42 @@ struct Output {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CardObservation {
-    card: Card,
+    card: MtgOnCurveCard,
     cmc: u8,
     card_count: usize,
     observations: Observations,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct ManaColorCount {
-    pub total: usize, // sum of all the below
-    pub c_count: usize,
-    pub w_count: usize,
-    pub u_count: usize,
-    pub b_count: usize,
-    pub r_count: usize,
-    pub g_count: usize,
-    pub wu_count: usize, // azorius
-    pub wb_count: usize, // orzhov
-    pub ub_count: usize, // dimir
-    pub ur_count: usize, // izzet
-    pub br_count: usize, // rakdos
-    pub bg_count: usize, // golgari
-    pub rg_count: usize, // gruul
-    pub rw_count: usize, // boros
-    pub gw_count: usize, // selesnya
-    pub gu_count: usize, // simic
+#[derive(Default, Debug, Serialize, Deserialize)]
+struct MtgOnCurveCard {
+    /// String representing the card name
+    pub name: String,
+    /// String representing the card mana cost, in "{X}{R}{R}" style format
+    pub mana_cost_string: String,
+    /// A URI to an image of the card
+    pub image_uri: String,
+    /// The card type
+    pub kind: CardKind,
+    /// A hash of the card name
+    pub hash: u64,
+    /// The turn to play the card, defaults to mana_cost.cmc()
+    pub turn: u8,
+    /// ManaCost representation of the card mana cost
+    pub mana_cost: ManaCost,
+}
+
+impl From<&Card> for MtgOnCurveCard {
+    fn from(card: &Card) -> Self {
+        Self {
+            name: card.name.clone(),
+            mana_cost_string: card.mana_cost_string.clone(),
+            image_uri: card.image_uri.clone(),
+            kind: card.kind,
+            hash: card.hash,
+            turn: card.turn,
+            mana_cost: card.mana_cost,
+        }
+    }
 }
 
 /// Runs a simulation given input
@@ -91,7 +104,7 @@ struct ManaColorCount {
 ///  console.log(output);
 ///  ```
 #[wasm_bindgen]
-pub fn run(input: &JsValue) -> JsValue {
+pub fn mtgoncurve_run(input: &JsValue) -> JsValue {
     let input: Input = match input.into_serde() {
         Err(e) => {
             return JsValue::from_str(&format!("Error deserializing simulation inputs: {:#?}", e));
@@ -108,24 +121,23 @@ pub fn run(input: &JsValue) -> JsValue {
 }
 
 fn run_impl(input: &Input) -> Result<Output, Error> {
-    let deck = match ALL_CARDS.from_deck_list(&input.code) {
+    let deck = match Deck::from_list(&input.code) {
         Err(e) => return Err(Error::BadDeckcode(e.0)),
-        Ok((m, _)) => m,
+        Ok(deck) => deck,
     };
-    if deck.cards.is_empty() {
+    if deck.is_empty() {
         return Err(Error::EmptyDeckcode);
     }
     let highest_turn = deck
-        .cards
         .iter()
-        .fold(0, |max, c| std::cmp::max(max, c.turn as usize));
+        .fold(0, |max, c| std::cmp::max(max, c.card.turn as usize));
     let mut mulligan = London::never();
     mulligan.mulligan_down_to = input.mulligan_down_to;
     mulligan.mulligan_on_lands = input.mulligan_on_lands.clone();
     for (i, acceptable_hand) in input.acceptable_hand_list.iter().enumerate() {
         let mut keep_cards = HashSet::new();
         for card_name in acceptable_hand {
-            if let Some(card) = deck.card_from_name(&card_name) {
+            if let Some(card) = ORACLE_CARDS.card_from_name(&card_name) {
                 keep_cards.insert(card.hash);
             } else {
                 return Err(Error::BadCardNameInRow(i, card_name.clone()));
@@ -142,22 +154,22 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         deck: &deck,
         on_the_play: input.on_the_play,
     });
-    let non_land_cards: HashSet<_> = deck.cards.iter().filter(|c| !c.is_land()).collect();
     let mut outputs = Output::new();
     outputs.accumulated_opening_hand_size = sim.accumulated_opening_hand_size;
     outputs.accumulated_opening_hand_land_count = sim.accumulated_opening_hand_land_count;
 
-    outputs.card_observations = non_land_cards
+    outputs.card_observations = deck
         .iter()
-        .map(|card| {
+        .filter(|c| !c.card.is_land())
+        .map(|c| {
+            let card = &c.card;
+            let count = c.count;
             let o = sim.observations_for_card_by_turn(&card, card.turn as usize);
-            let card_count = deck.cards.iter().filter(|c| c.hash == card.hash).count();
-            let card = (*card).clone();
             let cmc = card.mana_cost.cmc();
             CardObservation {
-                card,
+                card: card.into(),
                 cmc,
-                card_count,
+                card_count: count,
                 observations: o,
             }
         })
@@ -170,17 +182,15 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .card_observations
         .sort_by(|a, b| a.card.mana_cost.cmc().cmp(&b.card.mana_cost.cmc()));
 
-    let land_cards: HashSet<_> = deck.cards.iter().filter(|c| c.is_land()).collect();
-    outputs.land_counts = land_cards
+    outputs.land_counts = deck
         .iter()
-        .map(|card| {
-            let card_count = deck.cards.iter().filter(|c| c.name == card.name).count();
-            let card = (*card).clone();
-            let cmc = card.mana_cost.cmc();
+        .filter(|c| c.card.is_land())
+        .map(|c| {
+            let cmc = c.card.mana_cost.cmc();
             CardObservation {
-                card,
+                card: (&c.card).into(),
                 cmc,
-                card_count,
+                card_count: c.count,
                 observations: Observations::new(),
             }
         })
@@ -193,101 +203,40 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
         .land_counts
         .sort_by(|a, b| a.card.kind.cmp(&b.card.kind));
 
+    let deck_len = deck.len();
     // Calculate the other statistics
-    outputs.deck_size = deck.cards.len();
-    outputs.deck_average_cmc = if non_land_cards.len() == 0 {
+    outputs.deck_size = deck_len;
+    outputs.deck_average_cmc = if deck_len == 0 {
         0.0
     } else {
-        non_land_cards
+        let n = deck
             .iter()
-            .map(|c| c.mana_cost.cmc() as usize)
+            .filter(|c| !c.card.is_land())
+            .fold(0, |accum, c| accum + c.count);
+        deck.iter()
+            .filter(|c| !c.card.is_land())
+            .map(|c| c.count * (c.card.mana_cost.cmc() as usize))
             .sum::<usize>() as f64
-            / non_land_cards.len() as f64
+            / n as f64
     };
 
-    for card in &deck.cards {
-        if card.is_land() {
-            outputs.total_land_counts.count(&card.mana_cost);
-        }
-        match card.kind {
-            CardKind::BasicLand => outputs.basic_land_counts.count(&card.mana_cost),
-            CardKind::CheckLand => outputs.check_land_counts.count(&card.mana_cost),
-            CardKind::TapLand => outputs.tap_land_counts.count(&card.mana_cost),
-            CardKind::ShockLand => outputs.shock_land_counts.count(&card.mana_cost),
-            CardKind::OtherLand => outputs.other_land_counts.count(&card.mana_cost),
-            _ => outputs.non_land_counts.count(&card.mana_cost),
+    for cc in deck.iter() {
+        for _ in 0..cc.count {
+            let card = &cc.card;
+            if card.is_land() {
+                outputs.total_land_counts.count(&card.mana_cost);
+            }
+            match card.kind {
+                CardKind::BasicLand => outputs.basic_land_counts.count(&card.mana_cost),
+                CardKind::CheckLand => outputs.check_land_counts.count(&card.mana_cost),
+                CardKind::TapLand => outputs.tap_land_counts.count(&card.mana_cost),
+                CardKind::ShockLand => outputs.shock_land_counts.count(&card.mana_cost),
+                CardKind::OtherLand => outputs.other_land_counts.count(&card.mana_cost),
+                _ => outputs.non_land_counts.count(&card.mana_cost),
+            }
         }
     }
     Ok(outputs)
-}
-
-impl ManaColorCount {
-    pub fn new() -> Self {
-        Self {
-            total: 0,
-
-            b_count: 0,
-            u_count: 0,
-            g_count: 0,
-            r_count: 0,
-            w_count: 0,
-            c_count: 0,
-
-            wu_count: 0,
-            wb_count: 0,
-            ub_count: 0,
-            ur_count: 0,
-            br_count: 0,
-            bg_count: 0,
-            rg_count: 0,
-            rw_count: 0,
-            gw_count: 0,
-            gu_count: 0,
-        }
-    }
-
-    fn count(&mut self, card: &ManaCost) {
-        self.total += 1;
-        self.u_count += card.u as usize;
-        self.r_count += card.r as usize;
-        self.b_count += card.b as usize;
-        self.g_count += card.g as usize;
-        self.w_count += card.w as usize;
-        self.c_count += card.c as usize;
-        match (card.r, card.g, card.b, card.u, card.w) {
-            (1, 1, 0, 0, 0) => {
-                self.rg_count += 1;
-            }
-            (1, 0, 1, 0, 0) => {
-                self.br_count += 1;
-            }
-            (1, 0, 0, 1, 0) => {
-                self.ur_count += 1;
-            }
-            (1, 0, 0, 0, 1) => {
-                self.rw_count += 1;
-            }
-            (0, 1, 1, 0, 0) => {
-                self.bg_count += 1;
-            }
-            (0, 1, 0, 1, 0) => {
-                self.gu_count += 1;
-            }
-            (0, 1, 0, 0, 1) => {
-                self.gw_count += 1;
-            }
-            (0, 0, 1, 1, 0) => {
-                self.ub_count += 1;
-            }
-            (0, 0, 1, 0, 1) => {
-                self.wb_count += 1;
-            }
-            (0, 0, 0, 1, 1) => {
-                self.wu_count += 1;
-            }
-            _ => {}
-        }
-    }
 }
 
 impl Default for ManaColorCount {
@@ -352,7 +301,27 @@ mod tests {
 
     #[test]
     fn test_0() {
-        let code = include_str!("decks/24-60-8");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            8 Swamp #(This corresponds to the row in the table)
+            16 Detection Tower #(This needs to sum with Swamps to 24)
+            20 Darksteel Colossus #(This needs to sum to 60 cards total)
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -373,38 +342,38 @@ mod tests {
     #[test]
     fn test_1() {
         let code = "
-4 Doom Foretold (ELD) 187
-4 Omen of the Sea (THB) 58
-4 Thought Erasure (GRN) 206
-4 Teferi, Time Raveler (WAR) 221
-3 Treacherous Blessing (THB) 117
-4 Oath of Kaya (WAR) 209
-3 Kaya's Wrath (RNA) 187
-2 Archon of Sun's Grace (THB) 3
-2 Dream Trawler (THB) 214
-1 Time Wipe (WAR) 223
-3 Dance of the Manse (ELD) 186
-4 Hallowed Fountain (RNA) 251
-4 Watery Grave (GRN) 259
-4 Godless Shrine (RNA) 248
-2 Temple of Deceit (THB) 245
-2 Temple of Silence (M20) 256
-2 Temple of Enlightenment (THB) 246
-1 Castle Ardenvale (ELD) 238
-2 Castle Vantress (ELD) 242
-2 Plains (M20) 261
-2 Swamp (M20) 272
-1 Island (M20) 267
+            4 Doom Foretold (ELD) 187
+            4 Omen of the Sea (THB) 58
+            4 Thought Erasure (GRN) 206
+            4 Teferi, Time Raveler (WAR) 221
+            3 Treacherous Blessing (THB) 117
+            4 Oath of Kaya (WAR) 209
+            3 Kaya's Wrath (RNA) 187
+            2 Archon of Sun's Grace (THB) 3
+            2 Dream Trawler (THB) 214
+            1 Time Wipe (WAR) 223
+            3 Dance of the Manse (ELD) 186
+            4 Hallowed Fountain (RNA) 251
+            4 Watery Grave (GRN) 259
+            4 Godless Shrine (RNA) 248
+            2 Temple of Deceit (THB) 245
+            2 Temple of Silence (M20) 256
+            2 Temple of Enlightenment (THB) 246
+            1 Castle Ardenvale (ELD) 238
+            2 Castle Vantress (ELD) 242
+            2 Plains (M20) 261
+            2 Swamp (M20) 272
+            1 Island (M20) 267
 
-3 Glass Casket (ELD) 15
-2 Dovin's Veto (WAR) 193
-2 Ashiok, Dream Render (WAR) 228
-2 Revoke Existence (THB) 34
-1 Soul-Guide Lantern (THB) 237
-2 Duress (XLN) 105
-1 Devout Decree (M20) 13
-2 Banishing Light (THB) 4
-    ";
+            3 Glass Casket (ELD) 15
+            2 Dovin's Veto (WAR) 193
+            2 Ashiok, Dream Render (WAR) 228
+            2 Revoke Existence (THB) 34
+            1 Soul-Guide Lantern (THB) 237
+            2 Duress (XLN) 105
+            1 Devout Decree (M20) 13
+            2 Banishing Light (THB) 4
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -424,36 +393,36 @@ mod tests {
     #[test]
     fn test_2() {
         let code = "
-4 Growth Spiral (RNA) 178
-2 Murderous Rider (ELD) 97
-2 Temple of Mystery (M20) 255
-2 Temple of Malady (M20) 254
-2 Fabled Passage (ELD) 244
-4 Breeding Pool (RNA) 246
-4 Overgrown Tomb (GRN) 253
-4 Watery Grave (GRN) 259
-3 Uro, Titan of Nature's Wrath (THB) 229
-4 Medomai's Prophecy (THB) 53
-3 Elspeth's Nightmare (THB) 91
-4 Dryad of the Ilysian Grove (THB) 169
-1 Field of Ruin (THB) 242
-4 Hydroid Krasis (RNA) 183
-2 Island (ELD) 254
-4 Nissa, Who Shakes the World (WAR) 169
-2 Swamp (M20) 269
-3 Forest (M19) 280
-4 Ashiok, Nightmare Muse (THB) 208
-2 Eat to Extinction (THB) 90
+            4 Growth Spiral (RNA) 178
+            2 Murderous Rider (ELD) 97
+            2 Temple of Mystery (M20) 255
+            2 Temple of Malady (M20) 254
+            2 Fabled Passage (ELD) 244
+            4 Breeding Pool (RNA) 246
+            4 Overgrown Tomb (GRN) 253
+            4 Watery Grave (GRN) 259
+            3 Uro, Titan of Nature's Wrath (THB) 229
+            4 Medomai's Prophecy (THB) 53
+            3 Elspeth's Nightmare (THB) 91
+            4 Dryad of the Ilysian Grove (THB) 169
+            1 Field of Ruin (THB) 242
+            4 Hydroid Krasis (RNA) 183
+            2 Island (ELD) 254
+            4 Nissa, Who Shakes the World (WAR) 169
+            2 Swamp (M20) 269
+            3 Forest (M19) 280
+            4 Ashiok, Nightmare Muse (THB) 208
+            2 Eat to Extinction (THB) 90
 
-3 Mystical Dispute (ELD) 58
-3 Destiny Spinner (THB) 168
-3 Agonizing Remorse (THB) 83
-1 Casualties of War (WAR) 187
-1 Massacre Girl (WAR) 99
-2 Lovestruck Beast (ELD) 165
-1 Ashiok, Dream Render (WAR) 228
-1 Shadowspear (THB) 236
-    ";
+            3 Mystical Dispute (ELD) 58
+            3 Destiny Spinner (THB) 168
+            3 Agonizing Remorse (THB) 83
+            1 Casualties of War (WAR) 187
+            1 Massacre Girl (WAR) 99
+            2 Lovestruck Beast (ELD) 165
+            1 Ashiok, Dream Render (WAR) 228
+            1 Shadowspear (THB) 236
+        ";
         let mut mulligan_on_lands = HashSet::new();
         mulligan_on_lands.insert(0);
         mulligan_on_lands.insert(1);
@@ -502,7 +471,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
     fn karsten_test_24_60_8() {
-        let code = include_str!("decks/24-60-8");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            8 Swamp # (This corresponds to the row in the table)
+            16 Detection Tower # (This needs to sum with Swamps to 24)
+            20 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -541,7 +530,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-60-cards-768x209.png
     #[test]
     fn karsten_test_24_60_14() {
-        let code = include_str!("decks/24-60-14");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            14 Swamp # (This corresponds to the row in the table)
+            10 Detection Tower # (This needs to sum with Swamps to 24)
+            20 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -580,7 +589,27 @@ mod tests {
     // table: https://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-40-cards-768x167.png
     #[test]
     fn karsten_test_17_40_5() {
-        let code = include_str!("decks/17-40-5");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            5 Swamp # (This corresponds to the row in the table)
+            12 Detection Tower # (This needs to sum with Swamps to 17)
+            7 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),
@@ -619,7 +648,27 @@ mod tests {
     // table: http://227rsi2stdr53e3wto2skssd7xe-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/How-many-sources-99-cards.png
     #[test]
     fn karsten_test_40_99_15() {
-        let code = include_str!("decks/40-99-15");
+        let code = "
+            1 Appetite for Brains
+            1 Abnormal Endurance
+            1 Bloodghast
+            1 Ammit Eternal
+            1 Blood Operative
+            1 Doomsday
+            1 Ancient Craving
+            1 Akuta, Born of Ash
+            1 Grave Pact
+            1 Anointed Deacon
+            1 Phyrexian Obliterator
+            1 Aku Djinn
+            1 Hellfire
+            1 Bogstomper
+            1 Acid-Spewer Dragon
+            1 Cosmic Horror
+            15 Swamp # (This corresponds to the row in the table)
+            25 Detection Tower # (This needs to sum with Swamps to 17)
+            43 Darksteel Colossus # (This needs to sum to 60 cards total)
+        ";
         let total = 100000;
         let input = Input {
             code: code.to_string(),

@@ -5,36 +5,77 @@ extern crate serde;
 extern crate log;
 #[macro_use]
 extern crate landlord;
-//#[macro_use]
-//extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate reqwest;
 extern crate select;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use landlord::card::*;
+use landlord::prelude::*;
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
+use std::collections::HashMap;
+use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-//use std::env;
-//use std::path::Path;
 
 macro_rules! fetch {
   ($url:expr) => {{
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(3));
     info!("Fetching {}", $url);
     reqwest::blocking::get($url)?.text()?
   }};
 }
 
+lazy_static! {
+  pub static ref ORACLE_ID_LOOKUP: HashMap<&'static String, Vec<&'static Card>> =
+    ALL_CARDS.group_by_oracle_id();
+}
+
+// For each card, check if the set code is in standard and if not, search
+fn fix_set_code(deck: &mut Deck) {
+  for cc in &mut deck.cards {
+    let mut card = &mut cc.card;
+    if card.set.in_standard() {
+      continue;
+    }
+    let current = card.set;
+    if let Some(cards) = ORACLE_ID_LOOKUP.get(&card.oracle_id) {
+      let mut found = false;
+      for other in cards {
+        if other.in_standard() {
+          card.set = other.set;
+          found = true;
+          break;
+        }
+      }
+      if !found {
+        debug!(
+          "Could not find a variant of \"{}\" w/ oracle id \"{}\" in standard",
+          card.name, card.oracle_id
+        );
+      }
+    } else {
+      debug!(
+        "Could not find \"{}\"by oracle id \"{}\"",
+        card.name, card.oracle_id
+      );
+    }
+    debug!(
+      "Fix card \"{}\" set code from {:?} to {:?}",
+      card.name, current, card.set
+    );
+  }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   env_logger::init();
-  //let args: Vec<String> = env::args().collect();
-  //assert!(args.len() > 1, "Expected 1 arguments, URI and output path");
-  let out_path_string = "net_decks.landlord";
+  let args: Vec<String> = env::args().collect();
+  let default_out = String::from("data/net_decks.landlord");
+  let out_path_string = args.get(1).unwrap_or(&default_out);
 
   let formats: Vec<&'static str> = vec![
     "standard",
@@ -55,12 +96,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut results = Vec::new();
   for format in &formats {
-    let mut format_results = Vec::with_capacity(20);
-    let entry_url = "https://www.mtggoldfish.com/metagame/standard/full#paper";
-    let entry_html_text = fetch!(entry_url);
-    let entry_doc = Document::from(entry_html_text.as_str());
-
-    let deck_url_nodes: Vec<_> = entry_doc
+    info!("Recording {} decks", format);
+    let format_url = format!("https://www.mtggoldfish.com/metagame/{}/full#paper", format);
+    let format_html_text = fetch!(&format_url);
+    let format_doc = Document::from(format_html_text.as_str());
+    let deck_url_nodes: Vec<_> = format_doc
       .find(Class("deck-price-paper").descendant(Name("a")))
       .collect();
     let deck_data: Vec<_> = deck_url_nodes
@@ -74,7 +114,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (title, deck_url_path) in &deck_data {
       let deck_url = format!("https://www.mtggoldfish.com{}", deck_url_path);
-      std::thread::sleep(std::time::Duration::from_secs(3));
       let deck_text = fetch!(&deck_url);
       let deck_doc = Document::from(deck_text.as_str());
       let down_url_paths: Vec<_> = deck_doc
@@ -89,7 +128,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("/deck/arena_download");
       let down_url = format!("https://www.mtggoldfish.com{}", down_url_path);
-      std::thread::sleep(std::time::Duration::from_secs(3));
       let down_text = fetch!(&down_url);
       let down_doc = Document::from(down_text.as_str());
       let deck_text = down_doc
@@ -97,16 +135,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("copy-paste-box to exist")
         .text();
-      let deck = decklist!(&deck_text);
-      assert!(!deck.cards.is_empty());
-      info!(
-        "Recording deck {} with card length {}",
-        title,
-        deck.cards.len()
-      );
-      format_results.push((title.clone(), deck));
+      let mut deck = decklist!(&deck_text);
+      assert!(!deck.is_empty());
+      info!("Recording deck {} with card length {}", title, deck.len());
+      deck.title = Some(title.clone());
+      deck.url = Some(deck_url);
+      deck.format = GameFormat::Standard;
+      fix_set_code(&mut deck);
+      results.push(deck);
     }
-    results.push((format.clone(), format_results));
   }
   info!("Writing compressing bincode to {}", out_path_string);
   let encoded_collection = bincode::serialize(&results)?;
