@@ -346,7 +346,7 @@ impl Into<Card> for ScryfallCard {
         all_mana_costs[0].c,
       );
     }
-    let name = self.name.trim().to_lowercase();
+    let name = self.name;
     let image_uri = match self.image_uris.get("normal") {
       None => {
         // It's possible the the image uri is in the first
