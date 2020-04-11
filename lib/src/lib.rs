@@ -16,8 +16,6 @@ extern crate rand;
 extern crate regex;
 extern crate wasm_bindgen;
 #[macro_use]
-extern crate time;
-#[macro_use]
 extern crate log;
 
 pub mod arena;
