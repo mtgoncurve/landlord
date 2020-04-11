@@ -129,7 +129,7 @@ impl CardKind {
 #[macro_export]
 macro_rules! card {
     ($card_name:expr) => {
-        $crate::data::ORACLE_CARDS
+        $crate::data::ALL_CARDS
             .card_from_name($card_name)
             .unwrap_or_else(|| panic!("Cannot find card named \"{}\"", $card_name))
     };
@@ -598,5 +598,12 @@ mod tests {
         assert_eq!(card.mana_cost.w, 0);
         assert_eq!(card.mana_cost.c, 1);
         assert_eq!(card.turn, 1);
+    }
+
+    #[test]
+    fn card_narset_of_the_ancient_way() {
+        let card = card!("Narset of the Ancient Way");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
     }
 }

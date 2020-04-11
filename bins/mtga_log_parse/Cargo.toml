@@ -8,4 +8,3 @@ edition = "2018"
 log = "0.4.0"
 env_logger = "0.7.0"
 landlord = {path="../../lib"}
-time = "0.2.0"
