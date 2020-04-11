@@ -2,7 +2,7 @@
 //!
 //! Defines the interface between landlord and [https://mtgoncurve.com](https://mtgoncurve.com)
 use crate::card::{Card, CardKind, ManaColorCount, ManaCost};
-use crate::data::ORACLE_CARDS;
+use crate::data::ALL_CARDS;
 use crate::deck::Deck;
 use crate::mulligan::London;
 use crate::simulation::{Observations, Simulation, SimulationConfig};
@@ -137,7 +137,7 @@ fn run_impl(input: &Input) -> Result<Output, Error> {
     for (i, acceptable_hand) in input.acceptable_hand_list.iter().enumerate() {
         let mut keep_cards = HashSet::new();
         for card_name in acceptable_hand {
-            if let Some(card) = ORACLE_CARDS.card_from_name(&card_name) {
+            if let Some(card) = ALL_CARDS.card_from_name(&card_name) {
                 keep_cards.insert(card.hash);
             } else {
                 return Err(Error::BadCardNameInRow(i, card_name.clone()));

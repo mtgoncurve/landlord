@@ -2,15 +2,12 @@
 extern crate log;
 extern crate env_logger;
 extern crate landlord;
-extern crate time;
 
 use landlord::arena::Log;
 use landlord::card::CardKind;
-use landlord::data::*;
 use std::collections::HashMap;
 #[cfg(not(target_os = "macos"))]
 use std::env;
-use time::OffsetDateTime;
 
 #[cfg(target_os = "macos")]
 fn data_dir() -> std::path::PathBuf {
@@ -38,33 +35,25 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_string = std::fs::read_to_string(log_path.as_path())?;
     let log = Log::from_str(&log_string)?;
     let collection = log.collection().expect("error parsing collection from log");
-    let today = OffsetDateTime::now_local().date();
     info!("Mythic wild cards {}", log.wc_mythic_count());
     info!("Rare wild cards {}", log.wc_rare_count());
     info!("Uncommon wild cards {}", log.wc_uncommon_count());
     info!("Common wild cards {}", log.wc_common_count());
     info!("Gems {}", log.gems());
     info!("Gold {}", log.gold());
-    let mut decks = net_decks()?;
+    let mut decks = Vec::new();
     decks.extend(log.player_decks().unwrap());
     {
         let mut ranked = Vec::new();
-        for (i, deck) in decks.iter_mut().enumerate() {
-            let time_left = deck.average_time_remaining_in_standard(today);
-            ranked.push((i, time_left));
+        for (i, _deck) in decks.iter_mut().enumerate() {
+            ranked.push(i);
         }
-        ranked.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        for (i, time_left) in ranked {
+        for i in ranked {
             let deck = &decks[i];
             let title = deck.title.as_ref().unwrap();
             let url = &deck.url;
             let (_have, need) = deck.have_need(&collection);
-            info!(
-                "-[{}]({:?}): {:.0}",
-                title,
-                url.as_ref().unwrap_or(&"".to_string()),
-                time_left
-            );
+            info!("-[{}]({:?}", title, url.as_ref().unwrap_or(&"".to_string()),);
             info!(
                 "Price: mythic {:02} // rare {:02} // uncommon {:02} // common {:02}",
                 deck.mythic_count(),
@@ -80,17 +69,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 need.common_count()
             );
             for cc in &need.cards {
-                info!(
-                    "\t{} {} # {:?} days remaining",
-                    cc.count,
-                    cc.card.name,
-                    cc.card.set.time_remaining_in_standard(today).whole_days()
-                );
+                info!("\t{} {}", cc.count, cc.card.name,);
             }
-            info!(
-                "\tAverage days remaining: {}",
-                need.average_time_remaining_in_standard(today)
-            );
         }
     }
 
