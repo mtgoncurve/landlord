@@ -1,9 +1,9 @@
 use crate::card::*;
+use chrono::NaiveDate;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use time::{Date, Duration};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScryfallCard {
@@ -23,7 +23,7 @@ pub struct ScryfallCard {
   #[serde(default)]
   pub color_identity: HashSet<ManaColor>,
   #[serde(default)]
-  pub legalities: HashMap<GameFormat, Legality>,
+  pub legalities: HashMap<String, Legality>,
   #[serde(default)]
   pub image_uris: HashMap<String, String>,
   #[serde(default)]
@@ -37,15 +37,12 @@ pub struct ScryfallCard {
   #[serde(default)]
   pub rarity: Rarity,
   pub object: Object,
-  // NOTE(jshrake): SCRYFALL_JSON_URL only contains cards with a unique
-  // oracle_id, else we would use this value to ensure unique cards
-  //pub oracle_id: String,
-  // NOTE(jshrake): SCRYFALL_JSON_URL only contains english cards
-  // else we would use this value to select only english cards for now
-  //pub lang: String,
-  // NOTE(jshrake): SCRYFALL_JSON_URL contains the latest print of a card
-  // else we would use this value to select the latest released card
-  //pub released_at: String,
+  #[serde(with = "scryfall_date_format")]
+  #[serde(default = "scryfall_default_date")]
+  pub released_at: NaiveDate,
+  pub lang: Option<String>,
+  #[serde(default)]
+  pub promo: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq)]
@@ -75,6 +72,16 @@ pub enum Object {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename = "lowercase")]
 pub enum GameFormat {
+  Future,
+  Pioneer,
+  Vintage,
+  Brawl,
+  Historic,
+  Pauper,
+  Penny,
+  Commander,
+  Duel,
+  Oldschool,
   Standard,
   Modern,
   Legacy,
@@ -102,6 +109,7 @@ pub enum SetCode {
   // DAR is MTGAA's code for DOM
   // https://www.reddit.com/r/MagicArena/comments/8f72hf/mtga_calls_dominara_dar_instead_of_dom_why/
   // TODO: consider making a separate arena set code
+  IKO,
   DAR,
   ORI,
   BFZ,
@@ -135,6 +143,7 @@ impl std::str::FromStr for SetCode {
       // DAR is MTGAA's code for DOM
       // https://www.reddit.com/r/MagicArena/comments/8f72hf/mtga_calls_dominara_dar_instead_of_dom_why/
       // TODO: consider making a separate arena set code
+      "IKO" => Self::IKO,
       "DAR" => Self::DOM,
       "ORI" => Self::ORI,
       "BFZ" => Self::BFZ,
@@ -171,6 +180,7 @@ impl std::fmt::Display for SetCode {
 impl SetCode {
   pub fn in_standard(&self) -> bool {
     match self {
+      Self::IKO => true,
       Self::GRN => true,
       Self::RNA => true,
       Self::WAR => true,
@@ -180,24 +190,6 @@ impl SetCode {
       Self::M21 => false,
       _ => false,
     }
-  }
-
-  pub fn standard_rotation_date(&self) -> Date {
-    match self {
-      Self::GRN => date!(2020 - 10 - 01),
-      Self::RNA => date!(2020 - 10 - 01),
-      Self::WAR => date!(2020 - 10 - 01),
-      Self::M20 => date!(2020 - 10 - 01),
-      Self::ELD => date!(2021 - 10 - 01),
-      Self::THB => date!(2021 - 10 - 01),
-      Self::M21 => date!(2021 - 10 - 01),
-      _ => date!(2020 - 10 - 01),
-    }
-  }
-
-  pub fn time_remaining_in_standard(&self, today: Date) -> Duration {
-    let rotation = self.standard_rotation_date();
-    rotation - today
   }
 }
 
@@ -210,6 +202,48 @@ impl Default for SetCode {
 impl Default for Rarity {
   fn default() -> Self {
     Self::Unknown
+  }
+}
+
+fn scryfall_default_date() -> NaiveDate {
+  use std::str::FromStr;
+  NaiveDate::from_str("1970-01-01").unwrap()
+}
+
+mod scryfall_date_format {
+  use chrono::NaiveDate;
+  use serde::{self, Deserialize, Deserializer, Serializer};
+
+  const FORMAT: &'static str = "%Y-%m-%d";
+
+  // The signature of a serialize_with function must follow the pattern:
+  //
+  //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
+  //    where
+  //        S: Serializer
+  //
+  // although it may also be generic over the input types T.
+  pub fn serialize<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = format!("{}", date.format(FORMAT));
+    serializer.serialize_str(&s)
+  }
+
+  // The signature of a deserialize_with function must follow the pattern:
+  //
+  //    fn deserialize<'de, D>(D) -> Result<T, D::Error>
+  //    where
+  //        D: Deserializer<'de>
+  //
+  // although it may also be generic over the output types T.
+  pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDate, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let s = String::deserialize(deserializer)?;
+    NaiveDate::parse_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
   }
 }
 

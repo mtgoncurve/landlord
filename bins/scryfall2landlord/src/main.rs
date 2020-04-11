@@ -56,13 +56,22 @@ fn main() -> Result<(), Error> {
     let json_val = serde_json::from_str(&json_file_contents)?;
     info!("Deserializing Scryfall JSON");
     let mut scryfall_cards: Vec<ScryfallCard> = serde_json::from_value(json_val)?;
+    // Filter out non-english cards
+    scryfall_cards = scryfall_cards
+        .into_iter()
+        .filter(|c| c.lang.as_ref().map_or(false, |l| l == "en"))
+        .collect();
+    // Filter out promo cards
+    scryfall_cards = scryfall_cards.into_iter().filter(|c| !c.promo).collect();
     // Filter out any cards that are not legal in all formats
     // This should filter out any tokens
     // See https://github.com/mtgoncurve/landlord/issues/4
     scryfall_cards = scryfall_cards
         .into_iter()
-        .filter(|c| c.legalities.values().any(|l| l != &Legality::NotLegal))
+        .filter(|c| !c.legalities.values().all(|l| l == &Legality::NotLegal))
         .collect();
+    scryfall_cards.sort_by_cached_key(|c| (c.oracle_id.clone(), std::cmp::Reverse(c.released_at)));
+    scryfall_cards.dedup_by_key(|c| c.oracle_id.clone());
     // Flatten the card_faces out into scryfall_cards
     // To do that, we clone and update the image_uris to that of the parent card
     let mut card_faces = Vec::with_capacity(500);

@@ -3,7 +3,6 @@ use crate::data::*;
 use regex::Regex;
 use std::collections::HashMap;
 use std::ops::Deref;
-use time::Date;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deck {
@@ -105,21 +104,6 @@ impl Deck {
       .iter()
       .filter(|cc| cc.card.rarity == Rarity::Mythic && cc.card.kind != CardKind::BasicLand)
       .fold(0, |accum, cc| accum + cc.count)
-  }
-
-  pub fn average_time_remaining_in_standard(&self, date: Date) -> f64 {
-    let sum = self
-      .cards
-      .iter()
-      .filter(|cc| cc.card.kind != CardKind::BasicLand)
-      .map(|cc| cc.count as i64 * cc.card.set.time_remaining_in_standard(date).whole_days())
-      .fold(0i64, |accum, dur| accum + dur);
-    let non_basic_land_count = self
-      .cards
-      .iter()
-      .filter(|cc| cc.card.kind != CardKind::BasicLand)
-      .fold(0, |accum, cc| accum + cc.count);
-    sum as f64 / non_basic_land_count as f64
   }
 
   pub fn mana_counts(&self) -> ManaColorCount {
@@ -275,7 +259,7 @@ impl Deck {
         .trim()
         .to_string();
       // Find the card from the name, and clone it so we can apply card modifiers
-      let mut card = ORACLE_CARDS
+      let mut card = ALL_CARDS
         .card_from_name(&left_card_name)
         .ok_or_else(|| DeckcodeError(format!("Cannot find card named \"{}\" in collection", name)))?
         .clone();
