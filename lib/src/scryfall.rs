@@ -35,6 +35,8 @@ pub struct ScryfallCard {
   #[serde(default)]
   pub set: SetCode,
   #[serde(default)]
+  pub set_type: String,
+  #[serde(default)]
   pub rarity: Rarity,
   pub object: Object,
   #[serde(with = "scryfall_date_format")]
@@ -410,9 +412,7 @@ impl Into<Card> for ScryfallCard {
     let hash = s.finish();
     Card {
       name,
-      id: self.id,
       oracle_id: self.oracle_id,
-      collector_number: self.collector_number,
       hash,
       mana_cost_string: self.mana_cost,
       image_uri,

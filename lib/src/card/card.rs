@@ -13,12 +13,8 @@ use std::hash::{Hash, Hasher};
 pub struct Card {
     /// String representing the card name
     pub name: String,
-    /// Scryfall id
-    pub id: String,
     /// Scryfall oracle id
     pub oracle_id: String,
-    /// Collector number
-    pub collector_number: String,
     /// String representing the card mana cost, in "{X}{R}{R}" style format
     pub mana_cost_string: String,
     /// A URI to an image of the card
