@@ -310,6 +310,10 @@ lazy_static! {
             "Fabled Passage",
             ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
+        (
+            "Evolving Wilds",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
     ]
     .iter()
     .copied()
