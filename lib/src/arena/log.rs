@@ -86,7 +86,6 @@ impl Error for LogError {
 }
 
 lazy_static! {
-  static ref ID_LOOKUP: HashMap<&'static String, &'static Card> = ALL_CARDS.group_by_id();
   static ref NAME_LOOKUP: HashMap<&'static String, Vec<&'static Card>> = ALL_CARDS.group_by_name();
 }
 
@@ -194,41 +193,24 @@ impl Log {
       for (arena_id_str, count) in &player_cards.payload {
         let arena_id = arena_id_str.parse::<u64>().expect("parse to u64 works");
         if let Some(id_name) = ARENA_2_SCRYFALL.get(&arena_id) {
-          let id = &id_name.0;
           let name = &id_name.1;
-          if !id.is_empty() {
-            let mut card = Card::clone(ID_LOOKUP.get(id).expect("id lookup must work"));
-            // Ugh. We found the card but it might have a weird name (like the adventure cards)
-            // whatever. search again via a name_lookup and just take the first entry...
-            if &card.name != name {
-              debug!(
-                "Found card by id w/ name \"{}\", but expected \"{}\"",
-                card.name, name
-              );
-              card = Card::clone(
-                NAME_LOOKUP
-                  .get(name)
-                  .expect("name lookup must work")
-                  .first()
-                  .expect("nothing"),
-              );
-            }
-            // This should never happen
-            if card.arena_id != 0 && card.arena_id != arena_id {
-              warn!("{:?} but got {}", card, arena_id);
-              unreachable!();
-            }
-            //let split: Vec<_> = card.name.split("//").collect();
-            //card.name = split.first().expect("ok").trim().to_string();
-            builder = builder.insert_count(card, *count);
-          } else {
-            warn!("No scryfall id for arena id {}", arena_id);
-          }
-        } else {
-          warn!(
-            "Cannot find https://api.scryfall.com/cards/arena/{}",
-            arena_id
+          let card = Card::clone(
+            NAME_LOOKUP
+              .get(name)
+              .expect("name lookup must work")
+              .first()
+              .expect("nothing"),
           );
+          // This should never happen
+          if card.arena_id != 0 && card.arena_id != arena_id {
+            warn!("{:?} but got {}", card, arena_id);
+            unreachable!();
+          }
+          //let split: Vec<_> = card.name.split("//").collect();
+          //card.name = split.first().expect("ok").trim().to_string();
+          builder = builder.insert_count(card, *count);
+        } else {
+          warn!("No scryfall id for arena id {}", arena_id);
         }
       }
     }
@@ -248,22 +230,13 @@ impl Log {
             let id = &id_name.0;
             let name = &id_name.1;
             if !id.is_empty() {
-              let mut card = Card::clone(ID_LOOKUP.get(id).expect("id lookup must work"));
-              // Ugh. We found the card but it might have a weird name (like the adventure cards)
-              // whatever. search again via a name_lookup and just take the first entry...
-              if &card.name != name {
-                debug!(
-                  "Found card by id w/ name \"{}\", but expected \"{}\"",
-                  card.name, name
-                );
-                card = Card::clone(
-                  NAME_LOOKUP
-                    .get(name)
-                    .expect("name lookup must work")
-                    .first()
-                    .expect("nothing"),
-                );
-              }
+              let card = Card::clone(
+                NAME_LOOKUP
+                  .get(name)
+                  .expect("name lookup must work")
+                  .first()
+                  .expect("nothing"),
+              );
               // This should never happen
               if card.arena_id != 0 && card.arena_id != arena_id {
                 warn!("{:?} but got {}", card, arena_id);

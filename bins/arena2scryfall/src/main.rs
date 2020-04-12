@@ -125,10 +125,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
       warn!("\thttps://api.scryfall.com/cards/arena/{}", arena_id);
       continue;
     }
-    let found_card = cards.unwrap()[card_idx.unwrap()];
-    results.insert(arena_id, (found_card.id.clone(), title_lower));
+    results.insert(arena_id, title_lower);
   }
-  let results_rev: HashMap<String, u64> = results.iter().map(|(k, v)| (v.0.clone(), *k)).collect();
+  let results_rev: HashMap<String, u64> = results.iter().map(|(k, v)| (v.clone(), *k)).collect();
   serde_json::to_writer(
     &std::fs::File::create("data/arena2scryfall.json")?,
     &results,
