@@ -988,7 +988,7 @@ Deck
 4 Nightmare Shepherd (THB) 108
 4 Gray Merchant of Asphodel (THB) 99
 4 Temple of Malice (THB) 247
-4 Evolving Wilds (RIX) 186
+4 Forest
 1 Mountain (ELD) 262
 11 Swamp (ELD) 258
 4 Castle Locthwain (ELD) 241
