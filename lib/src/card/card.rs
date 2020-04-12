@@ -601,6 +601,19 @@ mod tests {
     }
 
     #[test]
+    fn card_evolving_wilds() {
+        let card = card!("Evolving Wilds");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.kind, CardKind::OtherLand);
+        assert_eq!(card.mana_cost.r, 1);
+        assert_eq!(card.mana_cost.g, 1);
+        assert_eq!(card.mana_cost.b, 1);
+        assert_eq!(card.mana_cost.u, 1);
+        assert_eq!(card.mana_cost.w, 1);
+        assert_eq!(card.mana_cost.c, 0);
+    }
+
+    #[test]
     fn card_narset_of_the_ancient_way() {
         let card = card!("Narset of the Ancient Way");
         assert_eq!(card.is_land(), false);
