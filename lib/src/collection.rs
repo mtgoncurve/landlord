@@ -46,18 +46,6 @@ impl Collection {
     m
   }
 
-  pub fn group_by_id<'a>(&'a self) -> HashMap<&'a String, &'a Card> {
-    let mut m = HashMap::new();
-    for card in &self.cards {
-      // Ignore card faces, which duplicate the id of the parent card object
-      if card.is_face {
-        continue;
-      }
-      m.insert(&card.id, card);
-    }
-    m
-  }
-
   pub fn group_by_arena_id<'a>(&'a self) -> HashMap<u64, &'a Card> {
     let mut m = HashMap::new();
     for card in &self.cards {

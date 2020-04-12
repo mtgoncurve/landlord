@@ -63,6 +63,11 @@ fn main() -> Result<(), Error> {
         .collect();
     // Filter out promo cards
     scryfall_cards = scryfall_cards.into_iter().filter(|c| !c.promo).collect();
+    // Filter out funny cards
+    scryfall_cards = scryfall_cards
+        .into_iter()
+        .filter(|c| c.set_type != "funny")
+        .collect();
     // Filter out any cards that are not legal in all formats
     // This should filter out any tokens
     // See https://github.com/mtgoncurve/landlord/issues/4
