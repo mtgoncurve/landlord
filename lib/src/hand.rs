@@ -316,38 +316,37 @@ impl Hand {
     let u_range = b_range.end..(b_range.end + u_pips);
     let w_range = u_range.end..(u_range.end + w_pips);
     let c_range = w_range.end..(w_range.end + c_pips);
-    for (n, land) in scratch.lands.iter().enumerate() {
-      let r = std::cmp::min(1, land.mana_cost.r);
-      let g = std::cmp::min(1, land.mana_cost.g);
-      let b = std::cmp::min(1, land.mana_cost.b);
-      let w = std::cmp::min(1, land.mana_cost.w);
-      let u = std::cmp::min(1, land.mana_cost.u);
-      let c = 1; // All land cards can tap for colorless
-      for m in r_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = r;
-      }
-      for m in g_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = g;
-      }
-      for m in b_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = b;
-      }
-      for m in u_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = u;
-      }
-      for m in w_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = w;
-      }
-      for m in c_range.clone() {
-        let i = N * m + n;
-        scratch.edges[i] = c;
+    for m in r_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.r);
       }
     }
+    for m in g_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.g);
+      }
+    }
+    for m in b_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.b);
+      }
+    }
+    for m in u_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.u);
+      }
+    }
+    for m in w_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.w);
+      }
+    }
+    for m in c_range {
+      for (n, _) in scratch.lands.iter().enumerate() {
+        scratch.edges[N * m + n] = 1;
+      }
+    }
+
     let result = bipartite_maximum_matches(
       &scratch.edges,
       M,
@@ -355,11 +354,9 @@ impl Hand {
       &mut scratch.seen,
       &mut scratch.matches,
     );
-    let paid = result == M;
-    let cmc = scratch.lands.len() >= goal.mana_cost.cmc() as usize;
     AutoTapResult {
-      paid,
-      cmc,
+      paid: result == M,
+      cmc: true,
       in_opening_hand,
       in_draw_hand,
     }
