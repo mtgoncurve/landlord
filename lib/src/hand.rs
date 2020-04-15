@@ -1133,4 +1133,28 @@ mod tests {
     assert_eq!(result.paid, true);
     assert_eq!(result.cmc, true);
   }
+
+  #[test]
+  fn test_issue_16() {
+    let mana_cost = ManaCost::from_rgbuwc(1, 1, 1, 2, 1, 0);
+    let card = Card {
+      mana_cost,
+      all_mana_costs: vec![mana_cost],
+      kind: CardKind::Creature,
+      turn: mana_cost.cmc(),
+      ..Default::default()
+    };
+    let h = vec![
+      card!("Temple of Enlightenment"), // {W}{U}
+      card!("Temple of Deceit"),        // {U}{B}
+      card!("Temple of Deceit"),        // {U}{B}
+      card!("Temple of Plenty"),        // {W}{G}
+      card!("Temple of Abandon"),       // {R}{G}
+      card!("Temple of Abandon"),       // {R}{G}
+    ];
+    let hand = Hand::from_opening_and_draws(&h, &[]);
+    let result = hand.play_cmc_auto_tap(&card);
+    assert_eq!(result.paid, true);
+    assert_eq!(result.cmc, true);
+  }
 }
