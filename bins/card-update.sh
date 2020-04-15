@@ -2,7 +2,7 @@
 set -x
 
 DATE=$(date "+%Y-%m-%d")
-ALL_FILE="scryfall-default-cards"
+ALL_FILE="scryfall-oracle-cards"
 ALL_INPUT="$ALL_FILE-$DATE.json"
 CI=${LANDLORD_IS_CI:-0}
 
