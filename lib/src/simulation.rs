@@ -1,7 +1,7 @@
 //! # Simulation engine and card observations
 use crate::card::Card;
 use crate::deck::Deck;
-use crate::hand::{AutoTapResult, Hand, PlayOrder, SimCard};
+use crate::hand::{AutoTapResult, Hand, PlayOrder, Scratch, SimCard};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
@@ -77,7 +77,7 @@ impl Simulation {
   pub fn observations_for_card_by_turn(&self, card: &Card, turn: usize) -> Observations {
     let mut observations = Observations::new();
     observations.total_runs = self.hands.len();
-    let mut scratch = Vec::with_capacity(self.hands[0].len());
+    let mut scratch = Scratch::new(30, 10);
     let play_order = if self.on_the_play {
       PlayOrder::First
     } else {
