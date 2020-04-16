@@ -1,5 +1,6 @@
 //! # Simulation hands and auto tap algorithm
-use crate::card::{Card, CardKind, ManaColor, ManaCost};
+use crate::bipartite::maximum_bipartite_matching;
+use crate::card::{Card, CardKind, ManaCost};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
 
@@ -58,6 +59,30 @@ impl SimCard {
   }
 }
 
+// Scratch space for the bipartite matching algorithm
+// Used to reduce allocations at runtime
+pub struct Scratch<'a> {
+  lands: Vec<&'a SimCard>,
+  edges: Vec<u8>,
+  seen: Vec<bool>,
+  matches: Vec<i32>,
+}
+
+impl<'a> Scratch<'a> {
+  /// Returns a new Scratch object based on the number of land cards in a deck
+  /// and the maximum pip count of any one card. It's OK if you guess wrong for
+  /// these numbers, there will simply be one additional allocation to make up
+  /// the difference.
+  pub fn new(max_land_count: usize, max_pip_count: usize) -> Self {
+    Self {
+      lands: Vec::with_capacity(max_land_count),
+      edges: vec![0; max_land_count * max_pip_count],
+      seen: vec![false; max_land_count],
+      matches: vec![-1; max_land_count],
+    }
+  }
+}
+
 impl Hand {
   /// Returns a new hand with opening hand from `opening`, and card draw from `draws`
   pub fn from_opening_and_draws(opening: &[&Card], draws: &[&Card]) -> Self {
@@ -97,42 +122,20 @@ impl Hand {
     mulligan.simulate_hand(rng, deck, draws)
   }
 
-  /// Attempts to tap mana in the opening hand and `draws` to pay the mana cost of the `goal` card
-  /// and returns the resulting information about this attempt
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the `turn` given the `player_order`.
   ///
-  ///# Details
-  ///
-  /// For a given goal card with CMC mana cost, one potential solution is to consider the set of all combinations
-  /// of CMC land cards, and find at least one set that can pay the cost. The downside of this solution is the
-  /// potential number of allocations required to examine the set of all combinations. Additionally, for large
-  /// combination sets, we must exhaust the entire space in order to determine a false result. Instead, we choose
-  /// to implement a greedy algorithm that has fairly bounded runtime and allocation costs. Keep in mind that much
-  /// of the complexity of the following solution is in determining which mana color a dual land should tap for,
-  /// and how to handle conditional lands, such as a tap land.
-  ///
-  /// An outline of the greedy algorithm follows:
-  /// 1. Sort all the land cards in the opening hand and draws by color contribution,
-  ///    with the goal of spending sources that only contribute a single mana color first.
-  ///   - What do we mean by color contribution? Suppose the goal card costs `{1}{R}{R}{W}`, then:
-  ///     * A basic Island {U} has a color contribution of 0
-  ///     * A basic Mountain {R} has a color contribution of 1
-  ///     * A dual mana card that can tap for {R} or {W} has a color contribution of 2
-  ///   - Conceptually, this sorting represents both the play order and the tap order. It assumes a player with perfect foresight
-  ///     that plays all the correct lands on previous turns in order to pay for the goal card in question.
-  /// 2. For each sorted land, tap for the color that we have the least available of followed by the color that has the most remaining to pay.
-  ///   - This last clause helps break ties. For instance, if we have a total of 2 green and 2 blue mana available, and '{G}{G}{U}'
-  ///     remaining to pay, and we come across a land that can tap for green or blue, we would tap it for green.
-  ///     If we only had 1 blue mana available, we would instead tap for blue due to the first clause taking precedence.
-  ///
-  /// I suspect it is possible to prove the correctness of the above algorithm via induction, but I have yet to do so.
-  /// In lieu of proofs, we have a test cases!
+  /// Allocates a fresh `Scratch` object every call, which is useful
+  /// for test cases. Call `auto_tap_with_scratch` directly to reuse
+  /// a single `Scratch` object for performance.
+  /// See `auto_tap_with_scratch` for the actual implementation details
   pub fn auto_tap_by_turn(
     &self,
     goal: &Card,
     turn: usize,
     player_order: PlayOrder,
   ) -> AutoTapResult {
-    let mut scratch = Vec::with_capacity(60);
+    let mut scratch = Scratch::new(30, 8);
     let goal = SimCard {
       kind: goal.kind,
       hash: goal.hash,
@@ -141,13 +144,17 @@ impl Hand {
     self.auto_tap_with_scratch(&goal, turn, player_order, &mut scratch)
   }
 
-  /// On the play, auto tap on curve
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the turn equal to the CMC of the goal card
+  /// when playing first
   pub fn play_cmc_auto_tap(&self, goal: &Card) -> AutoTapResult {
     let turn = std::cmp::max(1, goal.turn) as usize;
     self.auto_tap_by_turn(goal, turn, PlayOrder::First)
   }
 
-  /// On the draw, auto tap on curve
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the turn equal to the CMC of the goal card
+  /// when playing second
   pub fn draw_cmc_auto_tap(&self, goal: &Card) -> AutoTapResult {
     let turn = std::cmp::max(1, goal.turn) as usize;
     self.auto_tap_by_turn(goal, turn, PlayOrder::Second)
@@ -201,41 +208,41 @@ impl Hand {
     unsafe { &self.cards.get_unchecked(from..to) }
   }
 
-  /// The actual `auto_tap` implementation that exposes
-  /// the scratch space data structure for performance purposes
+  /// The actual auto_tap implementation that exposes
+  /// the scratch space data structure for performance purposes.
+  /// The implementation constructs a bipartite graph between the
+  /// land cards in hand, and the mana pips of the goal card mana cost,
+  /// and then attempts to find the size of the maximum matching set,
+  /// see http://discrete.openmathbooks.org/dmoi2/sec_matchings.html.
+  /// If the size of the maximum matching set is equal to the number
+  /// of mana pips of the goal card mana cost, then the land cards in hand
+  /// can successfully tap for the goal card.
+  /// Kudos to user https://github.com/msg555 for the suggestion to model the
+  /// problem as a bipartite matching problem (https://github.com/mtgoncurve/landlord/issues/16)
   pub fn auto_tap_with_scratch<'a>(
     &'a self,
     goal: &SimCard,
-    turn_count: usize,
+    turland_count: usize,
     play_order: PlayOrder,
-    scratch: &mut Vec<&'a SimCard>,
+    scratch: &mut Scratch<'a>,
   ) -> AutoTapResult {
-    // The implementation attempts to get goal_mana_cost.cmc() == 0
-    // by tapping land cards for the appropriate colors
-    let mut r = goal.mana_cost.r;
-    let mut g = goal.mana_cost.g;
-    let mut b = goal.mana_cost.b;
-    let mut u = goal.mana_cost.u;
-    let mut w = goal.mana_cost.w;
-    let mut c = goal.mana_cost.c;
     let draw_count = match play_order {
-      PlayOrder::First => turn_count - 1,
-      PlayOrder::Second => turn_count,
+      PlayOrder::First => turland_count - 1,
+      PlayOrder::Second => turland_count,
     };
-
     let opening_hand = self.opening();
     let draws = self.draws(draw_count);
 
-    // Populate scratch
-    scratch.clear();
+    // Populate scratch lands
+    scratch.lands.clear();
 
     // Iterate through opening_hand, add lands to scratch,
     // and return if the goal is found in the opening hand
-    let goal_in_opening_hand = {
+    let in_opening_hand = {
       let mut found = false;
       for card in opening_hand {
         if card.kind.is_land() {
-          scratch.push(card);
+          scratch.lands.push(card);
         }
         if card.hash == goal.hash {
           found = true;
@@ -246,11 +253,11 @@ impl Hand {
 
     // Iterate through draws, add lands to scratch,
     // and return if the goal is found in the drawn cards
-    let goal_in_draws = {
+    let in_draw_hand = {
       let mut found = false;
       for card in draws {
         if card.kind.is_land() {
-          scratch.push(card);
+          scratch.lands.push(card);
         }
         if card.hash == goal.hash {
           found = true;
@@ -259,106 +266,84 @@ impl Hand {
       found
     };
 
-    let land_count = scratch.len();
+    let pip_count = goal.mana_cost.cmc() as usize; // rows (height)
+    let land_count = scratch.lands.len(); // columns (width)
 
-    // Early exit if we don't have CMC lands
-    if land_count < (r + g + b + u + w + c) as usize {
+    // Exit early if there aren't enough lands
+    if land_count < pip_count {
       return AutoTapResult {
         paid: false,
         cmc: false,
-        in_opening_hand: goal_in_opening_hand,
-        in_draw_hand: goal_in_draws,
+        in_opening_hand,
+        in_draw_hand,
       };
     }
 
-    // GREEDY ALGORITHM: STEP 1
-    // We want to tap lands that contribute the least to the mana cost first,
-    // i.e. basic lands and dual lands that only contribute one relevant mana
-    scratch.sort_unstable_by_key(|land| land.mana_cost.color_contribution(&goal.mana_cost));
-
-    // Now, iterate through the lands in our scratch space
-    for (i, land) in scratch.iter().enumerate() {
-      let remaining = r + g + b + u + w + c;
-      // The cost is paid -- break!
-      if remaining == 0 {
-        break;
-      }
-      let land_mana = &land.mana_cost;
-      // GREEDY ALGORITHM: STEP 2
-      // Sort by the least mana color available followed by the largest mana color cost remaining to pay
-      let mut color_order = [
-        (ManaColor::Red, 0, -(r as i16)),
-        (ManaColor::Green, 0, -(g as i16)),
-        (ManaColor::Black, 0, -(b as i16)),
-        (ManaColor::Blue, 0, -(u as i16)),
-        (ManaColor::White, 0, -(w as i16)),
-        (ManaColor::Colorless, 0, 0),
-      ];
-      for remaining_land in &scratch[i..] {
-        let land_mana = &remaining_land.mana_cost;
-        color_order[0].1 += land_mana.r;
-        color_order[1].1 += land_mana.g;
-        color_order[2].1 += land_mana.b;
-        color_order[3].1 += land_mana.u;
-        color_order[4].1 += land_mana.w;
-      }
-      color_order[..=4].sort_unstable_by_key(|c| (c.1, c.2));
-
-      let tap_for_r = land_mana.r != 0 && r != 0;
-      let tap_for_g = land_mana.g != 0 && g != 0;
-      let tap_for_b = land_mana.b != 0 && b != 0;
-      let tap_for_u = land_mana.u != 0 && u != 0;
-      let tap_for_w = land_mana.w != 0 && w != 0;
-      let tap_for_c = c != 0;
-      for (color, _, _) in &color_order {
-        match color {
-          ManaColor::Red => {
-            if tap_for_r {
-              r -= 1;
-              break;
-            }
-          }
-          ManaColor::Green => {
-            if tap_for_g {
-              g -= 1;
-              break;
-            }
-          }
-          ManaColor::Black => {
-            if tap_for_b {
-              b -= 1;
-              break;
-            }
-          }
-          ManaColor::Blue => {
-            if tap_for_u {
-              u -= 1;
-              break;
-            }
-          }
-          ManaColor::White => {
-            if tap_for_w {
-              w -= 1;
-              break;
-            }
-          }
-          ManaColor::Colorless => {
-            if tap_for_c {
-              c -= 1;
-              break;
-            }
-          }
-        }
+    // Resize the scratch space data structures required
+    // for the maximum bipartite matching algorithm
+    scratch.edges.resize(pip_count * land_count, 0);
+    scratch.seen.resize(land_count, false);
+    scratch.matches.resize(land_count, -1);
+    // Build the adjaceny matrix representing the bipartite
+    // graph between land cards and the goal card mana cost pips
+    let r_pips = goal.mana_cost.r as usize;
+    let g_pips = goal.mana_cost.g as usize;
+    let b_pips = goal.mana_cost.b as usize;
+    let u_pips = goal.mana_cost.u as usize;
+    let w_pips = goal.mana_cost.w as usize;
+    let c_pips = goal.mana_cost.c as usize;
+    let r_range = 0..r_pips;
+    let g_range = r_range.end..(r_range.end + g_pips);
+    let b_range = g_range.end..(g_range.end + b_pips);
+    let u_range = b_range.end..(b_range.end + u_pips);
+    let w_range = u_range.end..(u_range.end + w_pips);
+    let c_range = w_range.end..(w_range.end + c_pips);
+    for m in r_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = land.mana_cost.r;
       }
     }
-
-    // OK! We've considered all of our lands -- did we pay the cost?
-    let paid = r + g + b + u + w + c == 0;
+    for m in g_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = land.mana_cost.g;
+      }
+    }
+    for m in b_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = land.mana_cost.b;
+      }
+    }
+    for m in u_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = land.mana_cost.u;
+      }
+    }
+    for m in w_range {
+      for (n, land) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = land.mana_cost.w;
+      }
+    }
+    for m in c_range {
+      for (n, _) in scratch.lands.iter().enumerate() {
+        scratch.edges[land_count * m + n] = 1;
+      }
+    }
+    // Find the size of the maximum bipartite matching for
+    // the graph. This corresponds to the number
+    // of pips we can sucessfully pay with lands in hand
+    let pips_paid = maximum_bipartite_matching(
+      &scratch.edges,
+      pip_count,
+      land_count,
+      &mut scratch.seen,
+      &mut scratch.matches,
+    );
+    assert!(pips_paid <= pip_count);
     AutoTapResult {
-      paid,
+      paid: pips_paid == pip_count,
       cmc: true,
-      in_opening_hand: goal_in_opening_hand,
-      in_draw_hand: goal_in_draws,
+      in_opening_hand,
+      in_draw_hand,
     }
   }
 }
@@ -1127,6 +1112,30 @@ mod tests {
       card!("Waterlogged Grove"),
       card!("Watery Grave"),
       card!("Overgrown Tomb"),
+    ];
+    let hand = Hand::from_opening_and_draws(&h, &[]);
+    let result = hand.play_cmc_auto_tap(&card);
+    assert_eq!(result.paid, true);
+    assert_eq!(result.cmc, true);
+  }
+
+  #[test]
+  fn test_issue_16() {
+    let mana_cost = ManaCost::from_rgbuwc(1, 1, 1, 2, 1, 0);
+    let card = Card {
+      mana_cost,
+      all_mana_costs: vec![mana_cost],
+      kind: CardKind::Creature,
+      turn: mana_cost.cmc(),
+      ..Default::default()
+    };
+    let h = vec![
+      card!("Temple of Enlightenment"), // {W}{U}
+      card!("Temple of Deceit"),        // {U}{B}
+      card!("Temple of Deceit"),        // {U}{B}
+      card!("Temple of Plenty"),        // {W}{G}
+      card!("Temple of Abandon"),       // {R}{G}
+      card!("Temple of Abandon"),       // {R}{G}
     ];
     let hand = Hand::from_opening_and_draws(&h, &[]);
     let result = hand.play_cmc_auto_tap(&card);
