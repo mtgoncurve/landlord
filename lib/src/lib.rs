@@ -23,6 +23,7 @@ pub mod arena;
 pub mod card;
 #[macro_use]
 pub mod deck;
+mod bipartite;
 pub mod collection;
 pub mod data;
 pub mod hand;

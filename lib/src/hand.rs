@@ -1,4 +1,5 @@
 //! # Simulation hands and auto tap algorithm
+use crate::bipartite::maximum_bipartite_matching;
 use crate::card::{Card, CardKind, ManaCost};
 use crate::mulligan::Mulligan;
 use rand::prelude::*;
@@ -58,6 +59,8 @@ impl SimCard {
   }
 }
 
+// Scratch space for the bipartite matching algorithm
+// Used to reduce allocations at runtime
 pub struct Scratch<'a> {
   lands: Vec<&'a SimCard>,
   edges: Vec<u8>,
@@ -66,6 +69,10 @@ pub struct Scratch<'a> {
 }
 
 impl<'a> Scratch<'a> {
+  /// Returns a new Scratch object based on the number of land cards in a deck
+  /// and the maximum pip count of any one card. It's OK if you guess wrong for
+  /// these numbers, there will simply be one additional allocation to make up
+  /// the difference.
   pub fn new(max_land_count: usize, max_pip_count: usize) -> Self {
     Self {
       lands: Vec::with_capacity(max_land_count),
@@ -74,57 +81,6 @@ impl<'a> Scratch<'a> {
       matches: vec![-1; max_land_count],
     }
   }
-}
-
-fn bipartite_match(
-  edges: &Vec<u8>,
-  M: usize,
-  N: usize,
-  m: usize,
-  seen: &mut Vec<bool>,
-  matches: &mut Vec<i32>,
-) -> bool {
-  for n in 0..N {
-    let i = N * m + n;
-    let condition0 = edges[i] == 1 && !seen[n];
-    if condition0 {
-      seen[n] = true;
-      let condition1 =
-        matches[n] < 0 || bipartite_match(edges, M, N, matches[n] as usize, seen, matches);
-      if condition1 {
-        matches[n] = m as i32;
-        return true;
-      }
-    }
-  }
-  false
-}
-
-fn bipartite_maximum_matches(
-  edges: &Vec<u8>,
-  M: usize,
-  N: usize,
-  seen: &mut Vec<bool>,
-  matches: &mut Vec<i32>,
-) -> usize {
-  let mut result = 0;
-  // reset matches
-  for mat in matches.iter_mut() {
-    *mat = -1;
-  }
-  // for each mana pip
-  for m in 0..M {
-    // reset seen
-    for s in seen.iter_mut() {
-      *s = false;
-    }
-    // Attempt to find a matching land
-    let ok = bipartite_match(edges, M, N, m, seen, matches);
-    if ok {
-      result += 1;
-    }
-  }
-  result
 }
 
 impl Hand {
@@ -166,6 +122,13 @@ impl Hand {
     mulligan.simulate_hand(rng, deck, draws)
   }
 
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the `turn` given the `player_order`.
+  ///
+  /// Allocates a fresh `Scratch` object every call, which is useful
+  /// for test cases. Call `auto_tap_with_scratch` directly to reuse
+  /// a single `Scratch` object for performance.
+  /// See `auto_tap_with_scratch` for the actual implementation details
   pub fn auto_tap_by_turn(
     &self,
     goal: &Card,
@@ -181,13 +144,17 @@ impl Hand {
     self.auto_tap_with_scratch(&goal, turn, player_order, &mut scratch)
   }
 
-  /// On the play, auto tap on curve
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the turn equal to the CMC of the goal card
+  /// when playing first
   pub fn play_cmc_auto_tap(&self, goal: &Card) -> AutoTapResult {
     let turn = std::cmp::max(1, goal.turn) as usize;
     self.auto_tap_by_turn(goal, turn, PlayOrder::First)
   }
 
-  /// On the draw, auto tap on curve
+  /// Returns the result of attempting to tap the `goal` card
+  /// with the land cards in hand (`self`) by the turn equal to the CMC of the goal card
+  /// when playing second
   pub fn draw_cmc_auto_tap(&self, goal: &Card) -> AutoTapResult {
     let turn = std::cmp::max(1, goal.turn) as usize;
     self.auto_tap_by_turn(goal, turn, PlayOrder::Second)
@@ -241,23 +208,32 @@ impl Hand {
     unsafe { &self.cards.get_unchecked(from..to) }
   }
 
-  /// The actual `auto_tap` implementation that exposes
-  /// the scratch space data structure for performance purposes
+  /// The actual auto_tap implementation that exposes
+  /// the scratch space data structure for performance purposes.
+  /// The implementation constructs a bipartite graph between the
+  /// land cards in hand, and the mana pips of the goal card mana cost,
+  /// and then attempts to find the size of the maximum matching set,
+  /// see http://discrete.openmathbooks.org/dmoi2/sec_matchings.html.
+  /// If the size of the maximum matching set is equal to the number
+  /// of mana pips of the goal card mana cost, then the land cards in hand
+  /// can successfully tap for the goal card.
+  /// Kudos to user https://github.com/msg555 for the suggestion to model the
+  /// problem as a bipartite matching problem (https://github.com/mtgoncurve/landlord/issues/16)
   pub fn auto_tap_with_scratch<'a>(
     &'a self,
     goal: &SimCard,
-    turn_count: usize,
+    turland_count: usize,
     play_order: PlayOrder,
     scratch: &mut Scratch<'a>,
   ) -> AutoTapResult {
     let draw_count = match play_order {
-      PlayOrder::First => turn_count - 1,
-      PlayOrder::Second => turn_count,
+      PlayOrder::First => turland_count - 1,
+      PlayOrder::Second => turland_count,
     };
     let opening_hand = self.opening();
     let draws = self.draws(draw_count);
 
-    // Populate scratch
+    // Populate scratch lands
     scratch.lands.clear();
 
     // Iterate through opening_hand, add lands to scratch,
@@ -290,10 +266,11 @@ impl Hand {
       found
     };
 
-    let M = goal.mana_cost.cmc() as usize; // pip count, rows (height)
-    let N = scratch.lands.len(); // land count, columns (width)
+    let pip_count = goal.mana_cost.cmc() as usize; // rows (height)
+    let land_count = scratch.lands.len(); // columns (width)
 
-    if N < M {
+    // Exit early if there aren't enough lands
+    if land_count < pip_count {
       return AutoTapResult {
         paid: false,
         cmc: false,
@@ -301,9 +278,14 @@ impl Hand {
         in_draw_hand,
       };
     }
-    scratch.edges.resize(M * N, 0);
-    scratch.seen.resize(N, false);
-    scratch.matches.resize(N, -1);
+
+    // Resize the scratch space data structures required
+    // for the maximum bipartite matching algorithm
+    scratch.edges.resize(pip_count * land_count, 0);
+    scratch.seen.resize(land_count, false);
+    scratch.matches.resize(land_count, -1);
+    // Build the adjaceny matrix representing the bipartite
+    // graph between land cards and the goal card mana cost pips
     let r_pips = goal.mana_cost.r as usize;
     let g_pips = goal.mana_cost.g as usize;
     let b_pips = goal.mana_cost.b as usize;
@@ -318,44 +300,47 @@ impl Hand {
     let c_range = w_range.end..(w_range.end + c_pips);
     for m in r_range {
       for (n, land) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.r);
+        scratch.edges[land_count * m + n] = land.mana_cost.r;
       }
     }
     for m in g_range {
       for (n, land) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.g);
+        scratch.edges[land_count * m + n] = land.mana_cost.g;
       }
     }
     for m in b_range {
       for (n, land) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.b);
+        scratch.edges[land_count * m + n] = land.mana_cost.b;
       }
     }
     for m in u_range {
       for (n, land) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.u);
+        scratch.edges[land_count * m + n] = land.mana_cost.u;
       }
     }
     for m in w_range {
       for (n, land) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = std::cmp::min(1, land.mana_cost.w);
+        scratch.edges[land_count * m + n] = land.mana_cost.w;
       }
     }
     for m in c_range {
       for (n, _) in scratch.lands.iter().enumerate() {
-        scratch.edges[N * m + n] = 1;
+        scratch.edges[land_count * m + n] = 1;
       }
     }
-
-    let result = bipartite_maximum_matches(
+    // Find the size of the maximum bipartite matching for
+    // the graph. This corresponds to the number
+    // of pips we can sucessfully pay with lands in hand
+    let pips_paid = maximum_bipartite_matching(
       &scratch.edges,
-      M,
-      N,
+      pip_count,
+      land_count,
       &mut scratch.seen,
       &mut scratch.matches,
     );
+    assert!(pips_paid <= pip_count);
     AutoTapResult {
-      paid: result == M,
+      paid: pips_paid == pip_count,
       cmc: true,
       in_opening_hand,
       in_draw_hand,
