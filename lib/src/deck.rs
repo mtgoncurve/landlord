@@ -204,29 +204,41 @@ impl Deck {
                 .expect("Failed to compile ARENA_LINE_REGEX regex");
     }
     let mut builder = DeckBuilder::new();
+    let mut looking_for_deck_line = false;
     for line in list.trim().lines() {
       let trimmed = line.trim();
       let trimmed_lower = trimmed.to_lowercase();
-      // An empty line divides the main board cards from the side board cards
-      if trimmed.is_empty() {
-        break;
-      }
       // Ignore reserved words
       if trimmed_lower == "deck" {
+        looking_for_deck_line = false;
         continue;
       }
       if trimmed_lower == "commander" {
+        looking_for_deck_line = true;
+        continue;
+      }
+      if trimmed_lower == "companion" {
+        looking_for_deck_line = true;
         continue;
       }
       if trimmed_lower == "sideboard" {
+        // Assumes sideboard comes after deck
         break;
       }
       if trimmed_lower == "maybeboard" {
+        // Assumes maybeboard comes after deck
         break;
       }
       // Ignore line comments
       if trimmed.starts_with('#') {
         continue;
+      }
+      if looking_for_deck_line {
+        continue;
+      }
+      // An empty line divides the main board cards from the side board cards
+      if trimmed.is_empty() {
+        break;
       }
       let caps = ARENA_LINE_REGEX
         .captures(trimmed)
@@ -846,5 +858,82 @@ mod tests {
     let code = "";
     let deck = decklist!(code);
     assert_eq!(deck.len(), 0);
+  }
+
+  #[test]
+  fn code_contains_companion() {
+    let code = "
+      Companion
+      1 Lurrus of the Dream Den (IKO) 226
+
+      Deck
+      1 Island
+      1 Plains
+      1 Mountain
+      1 Forest
+    ";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 4);
+  }
+
+  #[test]
+  fn code_contains_commander() {
+    let code = "
+      Commander
+      1 Lurrus of the Dream Den (IKO) 226
+
+      Deck
+      1 Island
+      1 Plains
+      1 Mountain
+      1 Forest
+    ";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 4);
+  }
+
+  #[test]
+  fn code_contains_deck() {
+    let code = "
+      Deck
+      1 Island
+      1 Plains
+      1 Mountain
+      1 Forest
+    ";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 4);
+  }
+
+  #[test]
+  fn code_contains_sideboard() {
+    let code = "
+      Deck
+      1 Island
+      1 Plains
+      1 Mountain
+      1 Forest
+
+      Sideboard
+      1 Forest
+    ";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 4);
+  }
+
+  #[test]
+  fn code_contains_maybeboard() {
+    let code = "
+      Deck
+      1 Island
+      1 Plains
+      1 Mountain
+      1 Forest
+
+      Maybeboard
+      1 Forest
+    ";
+    let deck = decklist!(code);
+    assert_eq!(deck.len(), 4);
   }
 }
