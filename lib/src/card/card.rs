@@ -622,4 +622,11 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn c20_card_call_the_coppercoats() {
+        let card = card!("Call the Coppercoats");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
