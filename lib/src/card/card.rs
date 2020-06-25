@@ -629,4 +629,19 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn c21_card_terror_of_the_peaks() {
+        let card = card!("Terror of the Peaks");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn c21_card_brash_taunter() {
+        let card = card!("Brash Taunter");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
 }
