@@ -644,4 +644,10 @@ mod tests {
         assert_eq!(card.kind, CardKind::Unknown);
     }
 
+    #[test]
+    fn iko_card_companion_lurrus() {
+        let card = card!("Lurrus of the Dream-Den");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
