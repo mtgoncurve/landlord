@@ -650,4 +650,11 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn jump_card_supply_runners() {
+        let card = card!("Supply Runners");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
