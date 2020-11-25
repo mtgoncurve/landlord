@@ -267,46 +267,58 @@ lazy_static! {
             "Desolate Lighthouse",
             ManaCost::from_rgbuwc(0, 0, 0, 0, 0, 1)
         ),
+        (
+            "Command Tower",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
+        (
+            "Opal Palace",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 1)
+        ),
+        (
+            "Path of Ancestry",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
         // fetch lands
         (
             "Arid Mesa",
-            ManaCost::from_rgbuwc(1, 0, 0, 0, 1, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Bloodstained Mire",
-            ManaCost::from_rgbuwc(1, 0, 1, 0, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Flooded Strand",
-            ManaCost::from_rgbuwc(0, 0, 0, 1, 1, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Marsh Flats",
-            ManaCost::from_rgbuwc(0, 0, 1, 0, 1, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Misty Rainforest",
-            ManaCost::from_rgbuwc(0, 1, 0, 1, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Polluted Delta",
-            ManaCost::from_rgbuwc(0, 0, 1, 1, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Scalding Tarn",
-            ManaCost::from_rgbuwc(1, 0, 0, 1, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Verdant Catacombs",
-            ManaCost::from_rgbuwc(0, 1, 1, 0, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Windswept Heath",
-            ManaCost::from_rgbuwc(0, 1, 0, 0, 1, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Wooded Foothills",
-            ManaCost::from_rgbuwc(1, 1, 0, 0, 0, 0)
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
         (
             "Fabled Passage",
@@ -314,6 +326,14 @@ lazy_static! {
         ),
         (
             "Evolving Wilds",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
+        (
+            "Terramorphic Expanse",
+            ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
+        ),
+        (
+            "Prismatic Vista",
             ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
     ]
