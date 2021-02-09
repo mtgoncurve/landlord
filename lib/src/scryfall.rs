@@ -316,6 +316,48 @@ lazy_static! {
             "Evolving Wilds",
             ManaCost::from_rgbuwc(1, 1, 1, 1, 1, 0)
         ),
+        // KHM Uncommon Lands
+        // https://scryfall.com/search?as=grid&order=name&q=type%3Aland+set%3Akhm+rarity%3Au
+        (
+            "Axgard Armory",
+            ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0)
+        ),
+        (
+            "Bretagard Stronghold",
+            ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0)
+        ),
+        (
+            "Gates of Istfell",
+            ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0)
+        ),
+        (
+            "Gnottvold Slumbermound",
+            ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0)
+        ),
+        (
+            "Great Hall of Starnheim",
+            ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0)
+        ),
+        (
+            "Immersturm Skullcairn",
+            ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0)
+        ),
+        (
+            "Littjara Mirrorlake",
+            ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0)
+        ),
+        (
+            "Port of Karfell",
+            ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0)
+        ),
+        (
+            "Skemfar Elderhall",
+            ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0)
+        ),
+        (
+            "Surtland Frostpyre",
+            ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0)
+        ),
     ]
     .iter()
     .copied()
