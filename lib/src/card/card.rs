@@ -671,4 +671,111 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn khm_issue_33() {
+        // https://github.com/mtgoncurve/landlord/issues/33
+        // https://scryfall.com/search?as=grid&order=name&q=type%3Aland+set%3Akhm+rarity%3Au
+        {
+            let card = card!("Axgard Armory");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 1);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Gates of Istfell");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 1);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Bretagard Stronghold");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 1);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Gnottvold Slumbermound");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 1);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Great Hall of Starnheim");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 1);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Immersturm Skullcairn");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 1);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Littjara Mirrorlake");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 1);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Port of Karfell");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 1);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Skemfar Elderhall");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 0);
+            assert_eq!(card.mana_cost.g, 1);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+        {
+            let card = card!("Surtland Frostpyre");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost.r, 1);
+            assert_eq!(card.mana_cost.g, 0);
+            assert_eq!(card.mana_cost.b, 0);
+            assert_eq!(card.mana_cost.u, 0);
+            assert_eq!(card.mana_cost.w, 0);
+            assert_eq!(card.mana_cost.c, 0); 
+        }
+    }
 }
+
