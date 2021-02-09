@@ -664,4 +664,11 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn khm_rise_of_the_dread_marn() {
+        let card = card!("Rise of the Dread Marn");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
