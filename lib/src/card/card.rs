@@ -777,5 +777,12 @@ mod tests {
             assert_eq!(card.mana_cost.c, 0); 
         }
     }
+
+    #[test]
+    fn stx_divide_by_zero() {
+        let card = card!("Divide by Zero");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
 
