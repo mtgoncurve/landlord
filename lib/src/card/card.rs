@@ -684,7 +684,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 1);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Gates of Istfell");
@@ -694,7 +694,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 1);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Bretagard Stronghold");
@@ -704,7 +704,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Gnottvold Slumbermound");
@@ -714,7 +714,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Great Hall of Starnheim");
@@ -724,7 +724,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 1);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Immersturm Skullcairn");
@@ -734,7 +734,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 1);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Littjara Mirrorlake");
@@ -744,7 +744,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 1);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Port of Karfell");
@@ -754,7 +754,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 1);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Skemfar Elderhall");
@@ -764,7 +764,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
         {
             let card = card!("Surtland Frostpyre");
@@ -774,7 +774,7 @@ mod tests {
             assert_eq!(card.mana_cost.b, 0);
             assert_eq!(card.mana_cost.u, 0);
             assert_eq!(card.mana_cost.w, 0);
-            assert_eq!(card.mana_cost.c, 0); 
+            assert_eq!(card.mana_cost.c, 0);
         }
     }
 
@@ -784,5 +784,158 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
-}
 
+    #[test]
+    fn pathway_lands() {
+        {
+            let card = card!("Barkchannel Pathway // Tidechannel Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Barkchannel Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Tidechannel Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Blightstep Pathway // Searstep Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Blightstep Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Searstep Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Branchloft Pathway // Boulderloft Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Branchloft Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Boulderloft Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Brightclimb Pathway // Grimclimb Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 0, 1, 0));
+        }
+        {
+            let card = card!("Brightclimb Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Grimclimb Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Clearwater Pathway // Murkwater Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 1, 0, 0));
+        }
+        {
+            let card = card!("Clearwater Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Murkwater Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Cragcrown Pathway // Timbercrown Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 1, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Cragcrown Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Timbercrown Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Darkbore Pathway // Slitherbore Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Darkbore Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 1, 0, 0, 0));
+        }
+        {
+            let card = card!("Slitherbore Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 1, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Hengegate Pathway // Mistgate Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 1, 0));
+        }
+        {
+            let card = card!("Hengegate Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Mistgate Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Needleverge Pathway // Pillarverge Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Needleverge Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0));
+        }
+        {
+            let card = card!("Pillarverge Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 0, 1, 0));
+        }
+        {
+            let card = card!("Riverglide Pathway // Lavaglide Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Riverglide Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(0, 0, 0, 1, 0, 0));
+        }
+        {
+            let card = card!("Lavaglide Pathway");
+            assert_eq!(card.is_land(), true);
+            assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0));
+        }
+    }
+}
