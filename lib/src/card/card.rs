@@ -938,4 +938,11 @@ mod tests {
             assert_eq!(card.mana_cost, ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0));
         }
     }
+
+    #[test]
+    fn c21_card_osgir() {
+        let card = card!("Osgir, the Reconstructor");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
