@@ -285,7 +285,7 @@ mod tests {
                 .iter()
                 .find(|o| o.card.name.to_lowercase() == $name.to_lowercase())
                 .unwrap_or_else(|| {
-                    panic!(format!("No card named: {}", $name));
+                    panic!("No card named: {}", $name);
                 });
             let actual = o.observations.p_mana_given_cmc();
             let difference = f64::abs($expected - actual);
