@@ -945,4 +945,18 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn mh2_card_solitude() {
+        let card = card!("Solitude");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn afr_book_of_exalted_deeds() {
+        let card = card!("The Book of Exalted Deeds");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
