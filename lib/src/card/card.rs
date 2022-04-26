@@ -966,4 +966,25 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn hullbreaker_horror() {
+        let card = card!("Hullbreaker Horror");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn neo_card() {
+        let card = card!("Ao, the Dawn Sky");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn snc_card() {
+        let card = card!("Falco Spara, Pactweaver");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
