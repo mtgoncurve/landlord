@@ -34,9 +34,9 @@ mod tests {
         assert_eq!(any_empty_image_uri, false);
     }
 
-    // @NOTE(jshrake): I don't recall the reason for this test, but it no longer passes. Ignore it for now.
+    // @NOTE([April 25, 2022]): I don't recall the reason for this test, but it no longer passes. Ignore it for now.
+    // @NOTE([Oct 29, 2022]): ... and now it passes.
     #[test]
-    #[should_panic]
     fn all_cards_have_unique_names() {
         let mut deduped = ALL_CARDS.clone();
         deduped.cards.dedup();
