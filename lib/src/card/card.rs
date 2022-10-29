@@ -995,4 +995,3 @@ mod tests {
         assert_eq!(card.kind, CardKind::Unknown);
     }
 }
-}
