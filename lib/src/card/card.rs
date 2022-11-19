@@ -987,10 +987,24 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
-    
+
     #[test]
     fn dmu_card() {
         let card = card!("Serra Paragon");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn bro_card_0() {
+        let card = card!("Ashnod, Flesh Mechanist");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn bro_card_1() {
+        let card = card!("Gix, Yawgmoth Praetor");
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
