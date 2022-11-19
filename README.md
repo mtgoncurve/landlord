@@ -1,9 +1,7 @@
-# landlord &emsp; [![BUILD-img]][BUILD-link] [![CARD-img]][CARD-link] [![NPM-img]][NPM-link] [![MIT-img]][MIT-link]
+# landlord &emsp; [![BUILD-img]][BUILD-link] [![NPM-img]][NPM-link] [![MIT-img]][MIT-link]
 
 [BUILD-img]:  https://github.com/mtgoncurve/landlord/workflows/Build/badge.svg?branch=master
 [BUILD-link]: https://github.com/mtgoncurve/landlord/actions?query=workflow%3ABuild
-[CARD-img]:   https://github.com/mtgoncurve/landlord/workflows/Card%20Update/badge.svg?branch=master
-[CARD-link]:  https://github.com/mtgoncurve/landlord/actions?query=workflow%3A%22Card+Update%22
 [NPM-img]:    https://img.shields.io/npm/v/@mtgoncurve/landlord
 [NPM-link]:   https://www.npmjs.com/package/@mtgoncurve/landlord
 [MIT-img]:    http://img.shields.io/badge/license-MIT-blue.svg
