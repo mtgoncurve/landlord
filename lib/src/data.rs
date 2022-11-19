@@ -1,7 +1,5 @@
 use crate::collection::Collection;
 use flate2::read::GzDecoder;
-use serde_json;
-use std::collections::HashMap;
 use std::io::prelude::*;
 
 /// Returns a new collection of all cards from data/all_cards.landlord
@@ -13,15 +11,8 @@ pub fn all_cards() -> Result<Collection, bincode::Error> {
     bincode::deserialize(&s)
 }
 
-pub fn arena_2_scryfall() -> Result<HashMap<u64, (String, String)>, serde_json::Error> {
-    let s = include_str!("../../data/arena2scryfall.json");
-    serde_json::from_str(s)
-}
-
 lazy_static! {
     pub static ref ALL_CARDS: Collection = all_cards().expect("all_cards() failed");
-    pub static ref ARENA_2_SCRYFALL: HashMap<u64, (String, String)> =
-        arena_2_scryfall().expect("arena_2_scryfall() failed");
 }
 
 #[cfg(test)]
@@ -31,7 +22,7 @@ mod tests {
     #[test]
     fn all_cards_have_non_empty_image_uri() {
         let any_empty_image_uri = ALL_CARDS.iter().any(|c| c.image_uri.is_empty());
-        assert_eq!(any_empty_image_uri, false);
+        assert!(!any_empty_image_uri);
     }
 
     // @NOTE([April 25, 2022]): I don't recall the reason for this test, but it no longer passes. Ignore it for now.

@@ -18,19 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arena2scryfall"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "env_logger",
- "flate2",
- "landlord",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -325,7 +312,7 @@ dependencies = [
 
 [[package]]
 name = "landlord"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bincode",
  "chrono",
@@ -390,15 +377,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa679ff6578b1cddee93d7e82e263b94a575e0bfced07284eb0c037c1d2416a5"
 dependencies = [
  "adler32",
-]
-
-[[package]]
-name = "mtga_log_parse"
-version = "0.1.0"
-dependencies = [
- "env_logger",
- "landlord",
- "log",
 ]
 
 [[package]]

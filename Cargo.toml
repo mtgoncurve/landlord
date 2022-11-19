@@ -1,7 +1,5 @@
 [workspace]
 members = [
   "lib",
-  "bins/scryfall2landlord",
-  "bins/mtga_log_parse",
-  "bins/arena2scryfall",
+  "bins/scryfall2landlord"
 ]

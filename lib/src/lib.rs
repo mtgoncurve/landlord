@@ -12,13 +12,11 @@ extern crate serde_derive;
 extern crate lazy_static;
 extern crate bincode;
 extern crate flate2;
+extern crate log;
 extern crate rand;
 extern crate regex;
 extern crate wasm_bindgen;
-#[macro_use]
-extern crate log;
 
-pub mod arena;
 #[macro_use]
 pub mod card;
 #[macro_use]
