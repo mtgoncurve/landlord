@@ -1021,4 +1021,16 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+    #[test]
+    fn mom_card_0() {
+        let card = card!("Elesh Norn // The Argent Etchings");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+    #[test]
+    fn mom_card_1() {
+        let card = card!("Invasion of Alara // Awaken the Maelstrom");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
