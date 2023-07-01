@@ -1033,4 +1033,16 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+    #[test]
+    fn ltr_card_0() {
+        let card = card!("Tom Bombadil");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+    #[test]
+    fn ltr_card_1() {
+        let card = card!("Sauron, the Dark Lord");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
