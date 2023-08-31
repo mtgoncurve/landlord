@@ -1045,4 +1045,16 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+    #[test]
+    fn woe_card_0() {
+        let card = card!("Asinine Antics");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+    #[test]
+    fn woe_card_1() {
+        let card = card!("Ashiok, Wicked Manipulator");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
