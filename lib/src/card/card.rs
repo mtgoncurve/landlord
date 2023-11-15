@@ -1051,9 +1051,24 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
     #[test]
     fn woe_card_1() {
         let card = card!("Ashiok, Wicked Manipulator");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn lci_card_0() {
+        let card = card!("The Ancient One");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn lci_card_1() {
+        let card = card!("Quintorius Kand");
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
