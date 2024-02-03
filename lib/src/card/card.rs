@@ -1072,4 +1072,18 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn mkm_card_0() {
+        let card = card!("Niv-Mizzet, Guildpact");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn mkm_card_1() {
+        let card = card!("Yarus, Roar of the Old Gods");
+        assert_eq!(card.is_land(), false);
+        assert_eq!(card.kind, CardKind::Unknown);
+    }
 }
