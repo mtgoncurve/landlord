@@ -120,6 +120,14 @@ impl CardKind {
             || self == Self::OtherLand
             || self == Self::ForcedLand
     }
+
+    #[inline]
+    pub fn untapped(self, just_drew: bool) -> bool {
+        if !just_drew {
+            return true;
+        }
+        return self != CardKind::TapLand
+    }
 }
 
 #[macro_export]
@@ -1085,5 +1093,21 @@ mod tests {
         let card = card!("Yarus, Roar of the Old Gods");
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
+    }
+
+    #[test]
+    fn untapped_0() {
+        let card = card!("Coastal Tower");
+        assert!(card.is_land());
+        assert!(!card.kind.untapped(true));
+        assert!(card.kind.untapped(false));
+    }
+
+    #[test]
+    fn untapped_1() {
+        let card = card!("Tundra");
+        assert!(card.is_land());
+        assert!(card.kind.untapped(true));
+        assert!(card.kind.untapped(false));
     }
 }

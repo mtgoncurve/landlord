@@ -448,7 +448,7 @@ mod tests {
         1 Hydroid Krasis#X=23
         12 Island
         12 Forest
-        1 Memorial to Folly
+        1 Swamp
         ";
         let n = 1000;
         let input = Input {
@@ -987,7 +987,7 @@ Deck
 1 Davriel, Rogue Shadowmage (WAR) 83
 4 Nightmare Shepherd (THB) 108
 4 Gray Merchant of Asphodel (THB) 99
-4 Temple of Malice (THB) 247
+4 Blood Crypt
 4 Forest
 1 Mountain (ELD) 262
 11 Swamp (ELD) 258
