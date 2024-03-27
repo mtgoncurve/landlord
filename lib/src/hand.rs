@@ -241,7 +241,8 @@ impl Hand {
     let in_opening_hand = {
       let mut found = false;
       for card in opening_hand {
-        if card.kind.is_land() {
+        let just_drew = turland_count == 1;
+        if card.kind.is_land() && card.kind.untapped(just_drew) {
           scratch.lands.push(card);
         }
         if card.hash == goal.hash {
@@ -255,8 +256,10 @@ impl Hand {
     // and return if the goal is found in the drawn cards
     let in_draw_hand = {
       let mut found = false;
-      for card in draws {
-        if card.kind.is_land() {
+      let len = draws.len();
+      for (i, card) in draws.iter().enumerate() {
+        let just_drew = i == len - 1;
+        if card.kind.is_land() && card.kind.untapped(just_drew) {
           scratch.lands.push(card);
         }
         if card.hash == goal.hash {
@@ -656,7 +659,7 @@ mod tests {
     let draws = vec![
       card!("Sulfur Falls"),
       card!("Sulfur Falls"),
-      card!("Dimir Guildgate"),
+      card!("Underground Sea"),
     ];
     let hand = Hand::from_opening_and_draws(&lands, &draws);
     let result = hand.play_cmc_auto_tap(&card);
@@ -964,7 +967,7 @@ mod tests {
     let lands = vec![card!("Memorial to Folly")];
     let hand = Hand::from_opening_and_draws(&lands, &[]);
     let res = hand.play_cmc_auto_tap(&card);
-    assert_eq!(res.paid, true);
+    assert_eq!(res.paid, false);
   }
 
   #[test]
@@ -1014,7 +1017,7 @@ mod tests {
   #[test]
   fn colorless_0() {
     let card = card!("The Immortal Sun");
-    let land = card!("Boros Guildgate");
+    let land = card!("Plateau");
     let draws = vec![land, land, land, land, land, land];
     let hand = Hand::from_opening_and_draws(&[], &draws);
     let result = hand.draw_cmc_auto_tap(&card);
@@ -1077,6 +1080,49 @@ mod tests {
     let result = hand.play_cmc_auto_tap(card);
     assert_eq!(result.paid, true);
     assert_eq!(result.cmc, true);
+  }
+
+  // tapland
+  #[test]
+  fn tapland_0_0() {
+    let card = card!("Delver of Secrets");
+    let opening = vec![card!("Coastal Tower")];
+    let hand = Hand::from_opening_and_draws(&opening, &[]);
+    let result = hand.play_cmc_auto_tap(card);
+    assert!(!result.paid);
+    assert!(!result.cmc);
+  }
+
+  #[test]
+  fn tapland_0_1() {
+    let card = card!("Delver of Secrets");
+    let draws = vec![card!("Swords to Plowshares"), card!("Coastal Tower")];
+    let hand = Hand::from_opening_and_draws(&[], &draws);
+    let result = hand.play_cmc_auto_tap(card);
+    assert!(!result.paid);
+    assert!(!result.cmc);
+  }
+
+  #[test]
+  fn tapland_1_0() {
+    let card = card!("Meddling Mage");
+    let opening = vec![card!("Tundra")];
+    let draws = vec![card!("Coastal Tower")];
+    let hand = Hand::from_opening_and_draws(&opening, &draws);
+    let result = hand.play_cmc_auto_tap(card);
+    assert!(!result.paid);
+    assert!(!result.cmc);
+  }
+
+  #[test]
+  fn tapland_1_1() {
+    let card = card!("Meddling Mage");
+    let opening = vec![card!("Coastal Tower")];
+    let draws = vec![card!("Tundra")];
+    let hand = Hand::from_opening_and_draws(&opening, &draws);
+    let result = hand.play_cmc_auto_tap(card);
+    assert!(result.paid);
+    assert!(result.cmc);
   }
 
   #[test]
