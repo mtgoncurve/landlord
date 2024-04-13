@@ -1086,4 +1086,47 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn kor_haven() {
+        let card = card!("Kor Haven");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.mana_cost.c, 1);
+    }
+
+    #[test]
+    fn otj_card_0() {
+        let card = card!("Three Steps Ahead");
+        assert_eq!(card.is_land(), false);
+    }
+
+    #[test]
+    fn otj_card_1() {
+        let card = card!("Gisa, the Hellraiser");
+        assert_eq!(card.is_land(), false);
+    }
+
+    #[test]
+    fn otj_card_2() {
+        let card = card!("Abraded Bluffs");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.mana_cost.r, 1);
+        assert_eq!(card.mana_cost.g, 0);
+        assert_eq!(card.mana_cost.b, 0);
+        assert_eq!(card.mana_cost.u, 0);
+        assert_eq!(card.mana_cost.w, 1);
+        assert_eq!(card.mana_cost.c, 0);
+    }
+
+    #[test]
+    fn otj_card_3() {
+        let card = card!("Conduit Pylons");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.mana_cost.r, 1);
+        assert_eq!(card.mana_cost.g, 1);
+        assert_eq!(card.mana_cost.b, 1);
+        assert_eq!(card.mana_cost.u, 1);
+        assert_eq!(card.mana_cost.w, 1);
+        assert_eq!(card.mana_cost.c, 1);
+    }
 }
