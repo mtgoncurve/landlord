@@ -1086,4 +1086,11 @@ mod tests {
         assert_eq!(card.is_land(), false);
         assert_eq!(card.kind, CardKind::Unknown);
     }
+
+    #[test]
+    fn kor_haven() {
+        let card = card!("Kor Haven");
+        assert_eq!(card.is_land(), true);
+        assert_eq!(card.mana_cost.c, 1);
+    }
 }

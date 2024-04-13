@@ -499,7 +499,12 @@ lazy_static! {
         (
           "Lavaglide Pathway",
           ManaCost::from_rgbuwc(1, 0, 0, 0, 0, 0)
-        )
+        ),
+        // https://github.com/mtgoncurve/mtgoncurve.com/issues/78
+        (
+            "Kor Haven",
+            ManaCost::from_rgbuwc(0, 0, 0, 0, 0, 1)
+          )
     ]
     .iter()
     .copied()
