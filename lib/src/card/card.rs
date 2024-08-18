@@ -1129,4 +1129,16 @@ mod tests {
         assert_eq!(card.mana_cost.w, 1);
         assert_eq!(card.mana_cost.c, 1);
     }
+
+    #[test]
+    fn blb_card_1() {
+        let card = card!("Ral, Crackling Wit");
+        assert_eq!(card.is_land(), false);
+    }
+
+    #[test]
+    fn blb_card_2() {
+        let card = card!("Three Tree City");
+        assert_eq!(card.is_land(), true);
+    }
 }
