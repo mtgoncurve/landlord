@@ -183,7 +183,7 @@ mod tests {
     fn card_sulfur_falls() {
         let card = card!("Sulfur Falls");
         assert_eq!(card.is_land(), true);
-        assert_eq!(card.kind, CardKind::CheckLand);
+        assert_eq!(card.kind, CardKind::OtherLand);
         assert_eq!(card.turn, 2);
         assert_eq!(card.mana_cost.b, 0);
         assert_eq!(card.mana_cost.u, 1);
@@ -197,7 +197,7 @@ mod tests {
     fn card_jungle_shrine() {
         let card = card!("Jungle Shrine");
         assert_eq!(card.is_land(), true);
-        assert_eq!(card.kind, CardKind::TapLand);
+        assert_eq!(card.kind, CardKind::OtherLand);
         assert_eq!(card.turn, 3);
         assert_eq!(card.mana_cost.b, 0);
         assert_eq!(card.mana_cost.u, 0);
@@ -224,7 +224,7 @@ mod tests {
     fn card_gateway_plaza() {
         let card = card!("Gateway Plaza");
         assert_eq!(card.is_land(), true);
-        assert_eq!(card.kind, CardKind::TapLand);
+        assert_eq!(card.kind, CardKind::OtherLand);
         assert_eq!(card.mana_cost.b, 1);
         assert_eq!(card.mana_cost.u, 1);
         assert_eq!(card.mana_cost.c, 1);
@@ -349,7 +349,7 @@ mod tests {
     fn card_rupture_spire() {
         let card = card!("Rupture Spire");
         assert_eq!(card.is_land(), true);
-        assert_eq!(card.kind, CardKind::TapLand);
+        assert_eq!(card.kind, CardKind::OtherLand);
         assert_eq!(card.mana_cost.b, 1);
         assert_eq!(card.mana_cost.u, 1);
         assert_eq!(card.mana_cost.c, 1);
