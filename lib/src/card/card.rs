@@ -1144,7 +1144,7 @@ mod tests {
 
     #[test]
     fn dsk_card_1() {
-        let card = card!("Smoky Loung // Misty Salon");
+        let card = card!("Smoky Lounge // Misty Salon");
         assert_eq!(card.is_land(), false);
     }
 
