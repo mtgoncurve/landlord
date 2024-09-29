@@ -1141,4 +1141,16 @@ mod tests {
         let card = card!("Three Tree City");
         assert_eq!(card.is_land(), true);
     }
+
+    #[test]
+    fn dsk_card_1() {
+        let card = card!("Acrobatic Cheerleader");
+        assert_eq!(card.is_land(), false);
+    }
+
+    #[test]
+    fn dsk_card_2() {
+        let card = card!("Valgavoth's Lair");
+        assert_eq!(card.is_land(), true);
+    }
 }
