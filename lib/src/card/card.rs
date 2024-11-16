@@ -1153,4 +1153,16 @@ mod tests {
         let card = card!("Valgavoth's Lair");
         assert_eq!(card.is_land(), true);
     }
+
+    #[test]
+    fn fdn_card_1() {
+        let card = card!("Sire of Seven Deaths");
+        assert_eq!(card.is_land(), false);
+    }
+
+    #[test]
+    fn fdn_card_2() {
+        let card = card!("Soulstone Sanctuary");
+        assert_eq!(card.is_land(), true);
+    }
 }
