@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -x
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+DATA_DIR="$PROJECT_ROOT/data"
+mkdir -p "$DATA_DIR"
+
 DATE=$(date "+%Y-%m-%d")
 ORACLE_CARDS="scryfall-oracle-cards-$DATE.json"
 CI=${LANDLORD_IS_CI:-0}
@@ -19,8 +25,9 @@ ORACLE_URL=$(curl 'https://api.scryfall.com/bulk-data' | python3 -c "import sys,
 #  2. Download the oracale cards
 curl $ORACLE_URL -o "$ORACLE_CARDS"
 #  3. Generate data/all_cards.landlord using the oracle cards
-RUST_BACKTRACE=1 RUST_LOG=info cargo run --release --bin scryfall2landlord "$ORACLE_CARDS" "data/all_cards.landlord"
+RUST_BACKTRACE=1 RUST_LOG=info cargo run --release --bin scryfall2landlord "$ORACLE_CARDS" "$DATA_DIR/all_cards.landlord"
 #  4. Was a new artifact generated? If so and this is the CI pipeline, then test it and upload the input file to S3
+
 git diff --exit-code --quiet
 if [ $? -eq 1 ] && [ "$CI" -eq 1 ]; then
     # Changes

@@ -11,11 +11,62 @@ landlord is the simulation backend for [https://mtgoncurve.com](https://mtgoncur
 
 ## What
 
-landlord is a Rust library that simulates the mulligan and card draw process in Magic: The Gathering in order to determine the probability to play cards on curve. The project uses ![wasm-pack](https://github.com/rustwasm/wasm-pack) to target the web.
+landlord is a Rust library that simulates the mulligan and card draw process in **Magic: The Gathering**
+in order to determine the probability to play cards on curve. The project uses [wasm-pack](https://github.com/rustwasm/wasm-pack),
+a tool for building, optimizing, and packaging Rust-generated WebAssembly.
 
-## Dev
+## Development
 
-See the [Makefile](./Makefile) for useful development tasks.
+Run `make all` to see available development tasks.
+
+### Updating the scryfall database
+
+```
+make card-update
+make build
+```
+
+### Dependencies
+
+```
+brew install rustup
+rustup-init
+```
+
+Verify `rustc` and `cargo` are available:
+
+```
+rustc --version
+cargo --version
+```
+
+Install `wasm-pack`:
+
+```
+brew install wasm-pack
+```
+
+## Use with mtgoncurve.com locally
+
+```
+cd lib/pkg
+yarn install
+yarn link
+```
+
+In your local copy of the mtgoncurve.com repo:
+
+```
+cd /path/to/mtgoncurve.com
+yarn link "@mtgoncurve/landlord"
+```
+
+and run the web app:
+
+```
+yarn
+yarn run start
+```
 
 ## License
 
