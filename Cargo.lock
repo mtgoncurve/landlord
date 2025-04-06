@@ -312,7 +312,7 @@ dependencies = [
 
 [[package]]
 name = "landlord"
-version = "2024.11.0"
+version = "2025.4.0"
 dependencies = [
  "bincode",
  "chrono",

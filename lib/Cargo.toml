@@ -1,6 +1,6 @@
 [package]
 name = "landlord"
-version = "2024.11.0"
+version = "2025.4.0"
 authors = ["Justin Shrake <justinshrake@gmail.com>"]
 description = "Magic: The Gathering card draw and mulligan simulator"
 repository = "https://github.com/mtgoncurve/landlord"
