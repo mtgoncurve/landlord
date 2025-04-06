@@ -28,9 +28,8 @@ deps:
 	  exit 1; \
 	}
 	@if ! rustup target list --installed | grep -q "wasm32-unknown-unknown"; then \
-	  echo "Error: 'wasm32-unknown-unknown' target not installed."; \
-	  echo "       Please run: 'rustup target add wasm32-unknown-unknown'"; \
-	  exit 1; \
+	  echo "Warning: 'wasm32-unknown-unknown' target not installed."; \
+	  echo "       Please run: 'rustup target add wasm32-unknown-unknown', attempting to continue..."; \
 	fi
 
 card-update: deps
